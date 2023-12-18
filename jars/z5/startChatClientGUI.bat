@@ -1,0 +1,1 @@
+java --module-path "C:/Program Files/OpenJFX/javafx-sdk-17.0.9/lib" --add-modules javafx.controls,javafx.fxml -cp "chatClient.jar;chatClientGUI.jar;kryonet-2.21-all.jar" rs.raf.pds.v4.z5.ChatClientGUI
