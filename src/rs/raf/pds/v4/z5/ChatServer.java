@@ -35,6 +35,7 @@ public class ChatServer implements Runnable{
 	private final String PRIVATE_MESSAGE_COMMAND  = "/private";
 	private final String LIST_ROOMS_COMMAND  = "/list_rooms";
 	private final String JOIN_ROOM_COMMAND  = "/join";
+	private final String GET_MORE_MESSAGES_COMMAND  = "/get_more_messages";
 	
 	public ChatServer(int portNumber) {
 		mainRoom = new ChatRoom(mainRoomName);
@@ -66,7 +67,7 @@ public class ChatServer implements Runnable{
 
 	    if (targetConnection != null && targetConnection.isConnected() && targetConnection != exception) {
 	        // Create a private message object or use the appropriate method to send the message
-	    	ChatMessage privateMessage = new ChatMessage(senderUserName, message, null);
+	    	ChatMessage privateMessage = new ChatMessage(senderUserName, message);
 	        targetConnection.sendTCP(privateMessage);
 	    }
 	}
@@ -164,6 +165,19 @@ public class ChatServer implements Runnable{
 				        if (parts.length == 2) {
 				            String roomName = parts[1];
 				            joinRoom(roomName, chatMessage.getUser());
+				        } else {
+				            System.out.println("Invalid private message format, the expected format is /private user_name message");
+				        }
+					}
+					else if(chatMessageText.startsWith(GET_MORE_MESSAGES_COMMAND)) {
+				        String[] parts = chatMessageText.split("\\s+", 2);
+
+				        // Check if the input has the expected format
+				        if (parts.length == 2) {
+				            String roomName = parts[1];
+				            ChatRoom room = chatRooms.get(roomName);
+							List<ChatMessage> history = room.getMoreMessages();
+					        sendPrivateMessage(null, chatMessage.getUser(), history.toString(), "Server: ");
 				        } else {
 				            System.out.println("Invalid private message format, the expected format is /private user_name message");
 				        }

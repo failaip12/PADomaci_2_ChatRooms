@@ -121,7 +121,7 @@ public class ChatClient implements Runnable{
 	
 	public void sendMessage(String message) {
 	    if (client.isConnected()) {
-	        client.sendTCP(new ChatMessage(userName, message, null));
+	        client.sendTCP(new ChatMessage(userName, message));
 	    }
 	}
 	
@@ -149,7 +149,7 @@ public class ChatClient implements Runnable{
 	            		client.sendTCP(new WhoRequest());
 	            	}							
 	            	else {
-	            		ChatMessage message = new ChatMessage(userName, userInput, null);
+	            		ChatMessage message = new ChatMessage(userName, userInput);
 	            		client.sendTCP(message);
 	            	}
 	            	

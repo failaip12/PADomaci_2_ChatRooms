@@ -9,6 +9,7 @@ public class ChatRoom {
 	private String roomName;
 	private ArrayList<String> userList;
 	private List<ChatMessage> messageHistory;
+	private final int GET_MORE_MESSAGES_LIMIT  = 20;
 	
 	public ChatRoom(String roomName, ArrayList<String> userList, List<ChatMessage> messageHistory) {
 		this.roomName = roomName;
@@ -27,11 +28,20 @@ public class ChatRoom {
 	}
 	
 	public List<ChatMessage> lastFiveMessages() {
+        
+        return getLastXMessages(5);
+	}
+
+	public List<ChatMessage> getMoreMessages() {
+		return getLastXMessages(GET_MORE_MESSAGES_LIMIT);
+	}
+	
+	public List<ChatMessage> getLastXMessages(int limit) {
         int totalMessages = messageHistory.size();
-        int startIndex = Math.max(0, totalMessages - 5);
+        int startIndex = Math.max(0, totalMessages - limit);
         int endIndex = totalMessages;
         
-        return messageHistory.subList(startIndex, endIndex);
+        return messageHistory.subList(startIndex, endIndex > limit ? endIndex : limit);
 	}
 	
 	public ArrayList<String> getUserList() {
