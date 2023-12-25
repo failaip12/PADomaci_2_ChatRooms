@@ -7,7 +7,7 @@ public class ChatMessage {
 	protected ChatMessage() {
 		
 	}
-	public ChatMessage(String user, String txt) {
+	public ChatMessage(String user, String txt, String roomName) {
 		this.user = user;
 		this.txt = txt;
 	}
@@ -19,6 +19,7 @@ public class ChatMessage {
 	public String getTxt() {
 		return txt;
 	}
+	
 	
 	
 }

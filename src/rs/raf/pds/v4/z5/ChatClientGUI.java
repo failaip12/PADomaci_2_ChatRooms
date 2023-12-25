@@ -106,7 +106,7 @@ public class ChatClientGUI extends Application {
     private void switchToChatWindow() {
         chatArea = new TextArea();
         chatArea.setEditable(false);
-        TextField inputField = new TextField();
+        inputField = new TextField();
         inputField.setOnAction(e -> sendMessage(inputField, chatArea));
 
         HBox inputBox = new HBox(inputField);

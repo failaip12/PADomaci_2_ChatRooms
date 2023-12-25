@@ -33,10 +33,8 @@ public class ChatClient implements Runnable{
 	final int portNumber;
 	final String userName;
 	
-	
 	public ChatClient(String hostName, int portNumber, String userName) {
 		this.client = new Client(DEFAULT_CLIENT_WRITE_BUFFER_SIZE, DEFAULT_CLIENT_READ_BUFFER_SIZE);
-		
 		this.hostName = hostName;
 		this.portNumber = portNumber;
 		this.userName = userName;
@@ -123,7 +121,7 @@ public class ChatClient implements Runnable{
 	
 	public void sendMessage(String message) {
 	    if (client.isConnected()) {
-	        client.sendTCP(new ChatMessage(userName, message));
+	        client.sendTCP(new ChatMessage(userName, message, null));
 	    }
 	}
 	
@@ -151,7 +149,7 @@ public class ChatClient implements Runnable{
 	            		client.sendTCP(new WhoRequest());
 	            	}							
 	            	else {
-	            		ChatMessage message = new ChatMessage(userName, userInput);
+	            		ChatMessage message = new ChatMessage(userName, userInput, null);
 	            		client.sendTCP(message);
 	            	}
 	            	
