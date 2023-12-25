@@ -13,6 +13,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import rs.raf.pds.v4.z5.messages.ChatMessage;
 
 public class ChatClientGUI extends Application {
     private ChatClient chatClient;
@@ -24,7 +25,10 @@ public class ChatClientGUI extends Application {
     private TextField hostnameField;
     private TextField portField;
     private Scene chatScene;
-
+    
+    private TextField editField;
+    private Button editButton;
+    
     public static void main(String[] args) {
         launch(args);
     }
@@ -112,13 +116,36 @@ public class ChatClientGUI extends Application {
         inputField.setOnAction(e -> sendMessage(inputField, chatArea));
 
         HBox inputBox = new HBox(inputField);
+        editField = new TextField();
+        editField.setPromptText("Edit your message");
 
-        VBox chatLayout = new VBox(chatArea, inputBox);
+        editButton = new Button("Edit");
+        editButton.setOnAction(e -> editMessage(editField, chatArea));
+
+        HBox editBox = new HBox(editField, editButton);
+
+        VBox chatLayout = new VBox(chatArea, inputBox, editBox); // Add editBox to include editing UI
         chatLayout.setSpacing(10);
         chatLayout.setPadding(new Insets(10));
 
         chatScene = new Scene(chatLayout, 400, 300);
         primaryStage.setScene(chatScene);
+    }
+    
+
+    private void editMessage(TextField editField, TextArea chatArea) {
+        String editedMessage = editField.getText().trim();
+        if (!editedMessage.isEmpty()) {
+            // Replace the selected message with the edited message
+            int selectedIndex = chatArea.getSelection().getStart();
+            if (selectedIndex >= 0 && selectedIndex < chatClient.getChatHistory().size()) {
+                ChatMessage selectedMessage = chatClient.getChatHistory().get(selectedIndex);
+                selectedMessage.setTxt(editedMessage);
+                updateChatArea();
+                // You might want to notify the server about the edit action here
+            }
+        }
+        editField.clear();
     }
     
     private void sendMessage(TextField inputField, TextArea chatArea) {

@@ -1,7 +1,7 @@
 package rs.raf.pds.v4.z5.messages;
 
 import com.esotericsoftware.kryo.Kryo;
-
+import java.util.UUID;
 public class KryoUtil {
 	public static void registerKryoClasses(Kryo kryo) {
 		kryo.register(String.class);
@@ -11,5 +11,6 @@ public class KryoUtil {
 		kryo.register(WhoRequest.class);
 		kryo.register(ListUsers.class);
 		kryo.register(InfoMessage.class);
+		kryo.register(UUID.class);
 	}
 }

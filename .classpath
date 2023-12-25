@@ -6,7 +6,6 @@
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="lib" path="lib/kryonet-2.21-all.jar"/>
 	<classpathentry kind="lib" path="C:/Program Files/OpenJFX/javafx-sdk-17.0.9/lib/javafx.base.jar">
 		<attributes>
 			<attribute name="module" value="true"/>
@@ -47,5 +46,6 @@
 			<attribute name="module" value="true"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="lib/kryonet-2.22.9.main.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

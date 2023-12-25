@@ -3,6 +3,8 @@ package rs.raf.pds.v4.z5;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -33,17 +35,24 @@ public class ChatClient implements Runnable{
 	final int portNumber;
 	final String userName;
 	
+    private List<ChatMessage> chatHistory;
+	
 	public ChatClient(String hostName, int portNumber, String userName) {
 		this.client = new Client(DEFAULT_CLIENT_WRITE_BUFFER_SIZE, DEFAULT_CLIENT_READ_BUFFER_SIZE);
 		this.hostName = hostName;
 		this.portNumber = portNumber;
 		this.userName = userName;
+		this.chatHistory = new ArrayList<ChatMessage>();
 		KryoUtil.registerKryoClasses(client.getKryo());
 		registerListener();
 	}
 	
     public String receiveMessage() {
         return receivedMessages.poll(); // Retrieves and removes the head of the queue, returns null if empty
+    }
+    
+    public List<ChatMessage> getChatHistory() {
+        return chatHistory;
     }
     
 	private void registerListener() {
@@ -79,6 +88,7 @@ public class ChatClient implements Runnable{
 		});
 	}
 	private void showChatMessage(ChatMessage chatMessage) {
+		chatHistory.add(chatMessage);
 		System.out.println(chatMessage.getUser()+":"+chatMessage.getTxt());
 		receivedMessages.offer(chatMessage.getUser()+":"+chatMessage.getTxt());
 	}

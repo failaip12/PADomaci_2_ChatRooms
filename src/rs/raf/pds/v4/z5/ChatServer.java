@@ -17,7 +17,7 @@ import rs.raf.pds.v4.z5.messages.Login;
 import rs.raf.pds.v4.z5.messages.WhoRequest;
 
 
-public class ChatServer implements Runnable{
+public class ChatServer implements Listener, Runnable{
 
 	private volatile Thread thread = null;
 	volatile boolean running = false;
