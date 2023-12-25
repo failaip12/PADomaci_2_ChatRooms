@@ -1,1 +1,1 @@
-java -cp "chatServer.jar;kryonet-2.22.9.main.jar" --add-opens=java.base/java.util=ALL-UNNAMED rs.raf.pds.v4.z5.ChatServer 4555
+java -cp "../../lib/kryonet-2.22.9.main.jar;chatServer.jar" --add-opens=java.base/java.util=ALL-UNNAMED rs.raf.pds.v4.z5.ChatServer 4555
