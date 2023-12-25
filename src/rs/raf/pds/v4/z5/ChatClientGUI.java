@@ -39,10 +39,12 @@ public class ChatClientGUI extends Application {
 
         hostnameField = new TextField();
         hostnameField.setPromptText("Enter hostname");
-
+        hostnameField.setText("localhost");
+        
         portField = new TextField();
         portField.setPromptText("Enter port");
-
+        portField.setText("4555");
+        
         Button joinButton = new Button("Join");
         joinButton.setOnAction(e -> joinChat());
 
@@ -59,7 +61,7 @@ public class ChatClientGUI extends Application {
         initialLayout.setSpacing(10);
         initialLayout.setPadding(new Insets(10));
 
-        Scene initialScene = new Scene(initialLayout, 400, 200);
+        Scene initialScene = new Scene(initialLayout, 600, 300);
         primaryStage.setScene(initialScene);
 
         primaryStage.setOnCloseRequest(e -> {
@@ -123,7 +125,7 @@ public class ChatClientGUI extends Application {
         String message = inputField.getText().trim();
         if (!message.isEmpty()) {
             chatClient.sendMessage(message);
-            chatArea.appendText("You: " + message + "\n");
+//            chatArea.appendText("You: " + message + "\n");
             inputField.clear();
         }
     }

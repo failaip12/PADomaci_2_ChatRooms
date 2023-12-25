@@ -83,7 +83,6 @@ public class ChatClient implements Runnable{
 		receivedMessages.offer(chatMessage.getUser()+":"+chatMessage.getTxt());
 	}
 	private void showMessage(String txt) {
-
 		receivedMessages.offer(txt);
 		System.out.println(txt);
 	}

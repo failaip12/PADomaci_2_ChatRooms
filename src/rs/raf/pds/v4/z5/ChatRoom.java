@@ -37,12 +37,13 @@ public class ChatRoom {
 	}
 	
 	public List<ChatMessage> getLastXMessages(int limit) {
-        int totalMessages = messageHistory.size();
-        int startIndex = Math.max(0, totalMessages - limit);
-        int endIndex = totalMessages;
-        
-        return messageHistory.subList(startIndex, endIndex > limit ? endIndex : limit);
+	    int totalMessages = messageHistory.size();
+	    int startIndex = Math.max(0, totalMessages - limit);
+	    int endIndex = Math.min(totalMessages, startIndex + limit); // Ensure endIndex doesn't exceed the size
+
+	    return messageHistory.subList(startIndex, endIndex);
 	}
+
 	
 	public ArrayList<String> getUserList() {
 		return userList;

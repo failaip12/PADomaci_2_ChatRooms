@@ -48,23 +48,34 @@ public class ChatServer implements Runnable{
 		registerListener();
 	}
 	
-	private void inviteUserToChatRoom(String roomName, String userNameInvited, String userNameInvitee) {
+	private void inviteUserToChatRoom(Connection connSender, String roomName, String userNameInvited, String userNameInvitee) {
 		ChatRoom room = chatRooms.get(roomName);
 		if(room != null) {
-			sendPrivateMessage(null, userNameInvited, "You got invited to the chatRoom " + roomName + " by user " + userNameInvitee, "Server: ");
+			InfoMessage infoMessageSender = new InfoMessage("Successfully invited the user " + userNameInvited + " to the ChatRoom " + roomName);
+			connSender.sendTCP(infoMessageSender);
+			
+			Connection connInvited = userConnectionMap.get(userNameInvited);
+			InfoMessage infoMessageInvited = new InfoMessage("You got invited to the chatRoom " + roomName + " by user " + userNameInvitee);
+			connInvited.sendTCP(infoMessageInvited);
 		}
 		else {
-			System.out.println("The room doesnt exist");
+			InfoMessage infoMessageInvitee = new InfoMessage("The room doesnt exist");
+			connSender.sendTCP(infoMessageInvitee);
 		}
 	}
 	
-	private void createChatRoom(String roomName) {
+	private void createChatRoom(Connection connSender, String roomName) {
 		chatRooms.put(roomName, new ChatRoom(roomName));
-		System.out.println("successfully created chat room " + roomName);
+		InfoMessage infoMessageSender = new InfoMessage("Successfully created chat room " + roomName);
+		connSender.sendTCP(infoMessageSender);
 	}
+	
 	private void sendPrivateMessage(Connection exception, String targetUserName, String message, String senderUserName) {
 	    Connection targetConnection = userConnectionMap.get(targetUserName);
-
+	    if(targetConnection == exception) {
+			InfoMessage infoMessageSender = new InfoMessage("You cannot send a private message to yourself");
+			exception.sendTCP(infoMessageSender);
+	    }
 	    if (targetConnection != null && targetConnection.isConnected() && targetConnection != exception) {
 	        // Create a private message object or use the appropriate method to send the message
 	    	ChatMessage privateMessage = new ChatMessage(senderUserName, message);
@@ -72,23 +83,29 @@ public class ChatServer implements Runnable{
 	    }
 	}
 	
-	private void listRooms(String userName) {
+	private void listRooms(Connection connSender, String userName) {
     	StringBuilder sb = new StringBuilder();
     	chatRooms.forEach((userNameRoom, chatRoom) -> {
         	sb.append("Room Name: " + chatRoom.getRoomName() + "\n");
         });
-        sendPrivateMessage(null, userName, sb.toString(), "Server: ");
+		InfoMessage infoMessageSender = new InfoMessage(sb.toString());
+		connSender.sendTCP(infoMessageSender);
 	}
 	
-	private void joinRoom(String roomName, String userName) {
+	private void joinRoom(Connection connSender, String roomName, String userName) {
 		ChatRoom room = chatRooms.get(roomName);
 		if(room != null) {
 			userRoomMap.put(userName, room);
+			InfoMessage infoMessage = new InfoMessage("Successfully loined the room " + roomName);
+			connSender.sendTCP(infoMessage);
+			
 			List<ChatMessage> history = room.lastFiveMessages();
-	        sendPrivateMessage(null, userName, history.toString(), "Server: ");
+			InfoMessage infoMessageHistory = new InfoMessage(history.toString());
+			connSender.sendTCP(infoMessageHistory);
 		}
 		else {
-			System.out.println("The room doesnt exist");
+			InfoMessage infoMessageSender = new InfoMessage("The room doesn't exist");
+			connSender.sendTCP(infoMessageSender);
 		}
 	}
 	
@@ -122,13 +139,15 @@ public class ChatServer implements Runnable{
 				            String roomName = parts[1];
 				            String userName = parts[2];
 				            if(chatMessage.getUser() != userName) {
-				            	inviteUserToChatRoom(roomName, userName, chatMessage.getUser());
+				            	inviteUserToChatRoom(connection, roomName, userName, chatMessage.getUser());
 				            }
 				            else {
-				            	System.out.println("You cannot invite yourself");
+				    			InfoMessage infoMessageSender = new InfoMessage("You cannot invite yourself");
+				    			connection.sendTCP(infoMessageSender);
 				            }
 				        } else {
-				            System.out.println("Invalid invite format, the expected format is /invite room_name user_name");
+			    			InfoMessage infoMessageSender = new InfoMessage("Invalid invite format, the expected format is /invite room_name user_name");
+			    			connection.sendTCP(infoMessageSender);
 				        }
 					}
 					else if(chatMessageText.startsWith(CREATE_ROOM_COMMAND)) {
@@ -138,9 +157,10 @@ public class ChatServer implements Runnable{
 				        if (parts.length == 2) {
 				            String roomName = parts[1];
 				            
-				            createChatRoom(roomName);
+				            createChatRoom(connection, roomName);
 				        } else {
-				            System.out.println("Invalid create format, the expected format is /create room_name");
+			    			InfoMessage infoMessageSender = new InfoMessage("Invalid create format, the expected format is /create room_name");
+			    			connection.sendTCP(infoMessageSender);
 				        }
 					}
 					else if(chatMessageText.startsWith(PRIVATE_MESSAGE_COMMAND)) {
@@ -152,11 +172,12 @@ public class ChatServer implements Runnable{
 				            String message = parts[2];
 				            sendPrivateMessage(connection, userName, message, chatMessage.getUser());
 				        } else {
-				            System.out.println("Invalid private message format, the expected format is /private user_name message");
+			    			InfoMessage infoMessageSender = new InfoMessage("Invalid private message format, the expected format is /private user_name message");
+			    			connection.sendTCP(infoMessageSender);
 				        }
 					}
 					else if(chatMessageText.startsWith(LIST_ROOMS_COMMAND)) {
-						listRooms(chatMessage.getUser());
+						listRooms(connection, chatMessage.getUser());
 					}
 					else if(chatMessageText.startsWith(JOIN_ROOM_COMMAND)) {
 				        String[] parts = chatMessageText.split("\\s+", 2);
@@ -164,9 +185,10 @@ public class ChatServer implements Runnable{
 				        // Check if the input has the expected format
 				        if (parts.length == 2) {
 				            String roomName = parts[1];
-				            joinRoom(roomName, chatMessage.getUser());
+				            joinRoom(connection, roomName, chatMessage.getUser());
 				        } else {
-				            System.out.println("Invalid private message format, the expected format is /private user_name message");
+			    			InfoMessage infoMessageSender = new InfoMessage("Invalid join room format, the expected format is /join room_name");
+			    			connection.sendTCP(infoMessageSender);
 				        }
 					}
 					else if(chatMessageText.startsWith(GET_MORE_MESSAGES_COMMAND)) {
@@ -179,11 +201,12 @@ public class ChatServer implements Runnable{
 							List<ChatMessage> history = room.getMoreMessages();
 					        sendPrivateMessage(null, chatMessage.getUser(), history.toString(), "Server: ");
 				        } else {
-				            System.out.println("Invalid private message format, the expected format is /private user_name message");
+			    			InfoMessage infoMessageSender = new InfoMessage("Invalid get more messages format, the expected format is /get_more_messages room_name");
+			    			connection.sendTCP(infoMessageSender);
 				        }
 					}
 					else {
-						broadcastChatMessage(chatMessage, connection, userRoomName); 
+						broadcastChatMessage(chatMessage, userRoomName); 
 					}
 					return;
 				}
@@ -221,14 +244,14 @@ public class ChatServer implements Runnable{
 		mainRoom.addNewUser(loginMessage.getUserName());
 		showTextToAll("User "+loginMessage.getUserName()+" has connected!", conn);
 	}
-	private void broadcastChatMessage(ChatMessage message, Connection exception, String chatRoomName) {
+	private void broadcastChatMessage(ChatMessage message, String chatRoomName) {
+        ChatRoom room = chatRooms.get(chatRoomName);
 	    for (Connection conn : userConnectionMap.values()) {
-	        if (conn.isConnected() && conn != exception && isConnectionInRoom(conn, chatRoomName)) {
+	        if (conn.isConnected() && isConnectionInRoom(conn, chatRoomName)) {
 	            conn.sendTCP(message);
-	            ChatRoom room = chatRooms.get(chatRoomName);
-	            room.addMessageToHistory(message);
 	        }
 	    }
+        room.addMessageToHistory(message);
 	}
 	
 	private boolean isConnectionInRoom(Connection connection, String chatRoomName) {
