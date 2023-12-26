@@ -33,6 +33,7 @@ public class ChatRoom {
 		for(ChatMessage message:messageHistory) {
 			if(message.getMessageId().equals(updatedMessage.getMessageId())) {
 				message.setTxt(updatedMessage.getTxt());
+				message.setEdited();
 			}
 		}
 	}

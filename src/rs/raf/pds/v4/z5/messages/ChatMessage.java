@@ -6,6 +6,26 @@ public class ChatMessage {
 	private String messageId; 
     private String user;
     private String txt;
+    private boolean reply = false;
+    private boolean edited = false;
+    
+    public boolean isEdited() {
+		return edited;
+	}
+
+	private ChatMessage messageRepliendTo = null;
+
+	public ChatMessage getMessageRepliendTo() {
+		return messageRepliendTo;
+	}
+
+	public void setMessageRepliendTo(ChatMessage messageRepliendTo) {
+		this.messageRepliendTo = messageRepliendTo;
+	}
+
+	public boolean isReply() {
+		return reply;
+	}
 
 	public ChatMessage() {
 		
@@ -17,6 +37,13 @@ public class ChatMessage {
         this.txt = txt;
     }
 
+    public void setReply() {
+    	this.reply = true;
+    }
+    
+    public void setEdited() {
+    	this.edited = true;
+    }
     
     public ChatMessage(String user, String txt) {
         this(UUID.randomUUID(), user, txt);

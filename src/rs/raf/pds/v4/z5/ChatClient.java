@@ -109,6 +109,7 @@ public class ChatClient implements Runnable{
 		for(ChatMessage message:chatHistory ) {
 			if(message.getMessageId().equals(chatMessage.getMessageId())) {
 				message.setTxt(chatMessage.getTxt());
+				message.setEdited();
 			}
 		}
 		System.out.println(chatMessage.getUser()+":"+chatMessage.getTxt());
@@ -158,6 +159,12 @@ public class ChatClient implements Runnable{
 	public void sendMessage(String message) {
 	    if (client.isConnected()) {
 	        client.sendTCP(new ChatMessage(userName, message));
+	    }
+	}
+	
+	public void sendReply(ChatMessage message) {
+	    if (client.isConnected()) {
+	        client.sendTCP(message);
 	    }
 	}
 	

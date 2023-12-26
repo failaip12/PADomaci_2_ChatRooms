@@ -27,6 +27,6 @@ public class EditMessage {
     }
 
     public String getTxt() {
-        return txt + " Ed";
+        return txt;
     }
 }

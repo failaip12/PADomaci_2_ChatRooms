@@ -144,7 +144,11 @@ public class ChatClientGUI extends Application {
                     setText(null);
                     setContextMenu(null);
                 } else {
-                    setText(item.toString());
+                    String text = item.toString();
+                    if (item.isEdited()) {
+                        text += " (Ed)";
+                    }
+                    setText(text);
                     setContextMenu(contextMenu);
                 }
             }
@@ -188,11 +192,21 @@ public class ChatClientGUI extends Application {
     }
 
     private void replyToMessage(ChatMessage selectedMessage) {
-    	System.out.println("replyToMessage");
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Reply to Message");
+        dialog.setHeaderText("Reply to " + selectedMessage.getUser() + "'s message:");
+        Optional<String> result = dialog.showAndWait();
+        result.ifPresent(replyText -> {
+            ChatMessage message = new ChatMessage(selectedMessage.getMessageId(), selectedMessage.getUser(), selectedMessage.getTxt());
+            message.setReply();
+            message.setMessageRepliendTo(selectedMessage);
+            chatClient.sendReply(message);
+        });
     }
 
     public void displayMessages() {
         messages = chatClient.getChatHistory();
         chatListView.getItems().setAll(messages);
+        chatListView.scrollTo(chatListView.getItems().size() - 1);
     }
 }

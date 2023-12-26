@@ -126,7 +126,10 @@ public class ChatServer implements Listener, Runnable{
 				    String userRoomName = userRoomMap.get(chatMessage.getUser()).getRoomName();
 				    String chatMessageText = chatMessage.getTxt();
 					System.out.println(chatMessage.getUser()+":" + chatMessageText);
-					if(chatMessageText.startsWith(Constants.INVITE_COMMAND)) {
+					if(chatMessage.isReply()) {
+						
+					}
+					else if(chatMessageText.startsWith(Constants.INVITE_COMMAND)) {
 				        // Split the input string by whitespace
 				        String[] parts = chatMessageText.split("\\s+");
 
@@ -351,7 +354,4 @@ public class ChatServer implements Listener, Runnable{
 		e.printStackTrace();
 	   }
 	}
-	
-   
-   
 }
