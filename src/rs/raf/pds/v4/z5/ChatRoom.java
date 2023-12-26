@@ -2,8 +2,10 @@ package rs.raf.pds.v4.z5;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import rs.raf.pds.v4.z5.messages.ChatMessage;
+import rs.raf.pds.v4.z5.messages.UpdatedChatMessage;
 
 public class ChatRoom {
 	private String roomName;
@@ -27,8 +29,24 @@ public class ChatRoom {
 		messageHistory.add(message);
 	}
 	
+	public void editMessage(UpdatedChatMessage updatedMessage) {
+		for(ChatMessage message:messageHistory) {
+			if(message.getMessageId().equals(updatedMessage.getMessageId())) {
+				message.setTxt(updatedMessage.getTxt());
+			}
+		}
+	}
+	
+	public ChatMessage getMessageFromUUID(UUID idMessage) {
+		for(ChatMessage message:messageHistory) {
+			if(message.getMessageId().equals(idMessage)) {
+				return message;
+			}
+		}
+		return null;
+	}
+	
 	public List<ChatMessage> lastFiveMessages() {
-        
         return getLastXMessages(5);
 	}
 

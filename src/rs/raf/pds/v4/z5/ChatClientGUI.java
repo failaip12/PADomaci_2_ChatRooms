@@ -1,34 +1,34 @@
 package rs.raf.pds.v4.z5;
 
-import java.io.IOException;
-
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextArea;
-import javafx.scene.control.TextField;
-import javafx.scene.layout.HBox;
+import javafx.scene.control.*;
+import javafx.scene.input.MouseButton;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import rs.raf.pds.v4.z5.messages.ChatMessage;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+
 public class ChatClientGUI extends Application {
     private ChatClient chatClient;
-    
+
     private Stage primaryStage;
-    private TextArea chatArea;
+    private ListView<ChatMessage> chatListView;
     private TextField inputField;
     private TextField usernameField;
     private TextField hostnameField;
     private TextField portField;
     private Scene chatScene;
-    
-    private TextField editField;
-    private Button editButton;
-    
+    public String username;
+    private List<ChatMessage> messages = new ArrayList<>();
+
     public static void main(String[] args) {
         launch(args);
     }
@@ -44,22 +44,22 @@ public class ChatClientGUI extends Application {
         hostnameField = new TextField();
         hostnameField.setPromptText("Enter hostname");
         hostnameField.setText("localhost");
-        
+
         portField = new TextField();
         portField.setPromptText("Enter port");
         portField.setText("4555");
-        
+
         Button joinButton = new Button("Join");
         joinButton.setOnAction(e -> joinChat());
 
         VBox initialLayout = new VBox(
-            new Label("Username:"),
-            usernameField,
-            new Label("Hostname:"),
-            hostnameField,
-            new Label("Port:"),
-            portField,
-            joinButton
+                new Label("Username:"),
+                usernameField,
+                new Label("Hostname:"),
+                hostnameField,
+                new Label("Port:"),
+                portField,
+                joinButton
         );
 
         initialLayout.setSpacing(10);
@@ -80,13 +80,13 @@ public class ChatClientGUI extends Application {
     }
 
     private void joinChat() {
-        String username = usernameField.getText().trim();
+        username = usernameField.getText().trim();
         String hostname = hostnameField.getText().trim();
         String portStr = portField.getText().trim();
 
         if (!username.isEmpty() && !hostname.isEmpty() && !portStr.isEmpty()) {
             int port = Integer.parseInt(portStr);
-            chatClient = new ChatClient(hostname, port, username);
+            chatClient = new ChatClient(this, hostname, port, username);
             try {
                 chatClient.start();
             } catch (IOException e) {
@@ -101,66 +101,98 @@ public class ChatClientGUI extends Application {
                     } catch (InterruptedException ex) {
                         ex.printStackTrace();
                     }
-                    if(primaryStage.getScene() == chatScene) {
-                    	Platform.runLater(() -> updateChatArea());
+                    if (primaryStage.getScene() == chatScene) {
+                        Platform.runLater(() -> displayMessages());
                     }
                 }
             }).start();
         }
     }
-    
+
     private void switchToChatWindow() {
-        chatArea = new TextArea();
-        chatArea.setEditable(false);
+
+    	BorderPane borderPane = new BorderPane();
+        chatListView = new ListView<>();
+        
+        chatListView.setCellFactory(param -> new ListCell<ChatMessage>() {
+            private final ContextMenu contextMenu = new ContextMenu();
+
+            {
+                MenuItem editItem = new MenuItem("Edit");
+                editItem.setOnAction(e -> {
+                    ChatMessage selectedMessage = getItem();
+                    if (selectedMessage != null && username.equals(selectedMessage.getUser())) {
+                        editMessage(selectedMessage);
+                    }
+                });
+
+                MenuItem replyItem = new MenuItem("Reply");
+                replyItem.setOnAction(e -> {
+                    ChatMessage selectedMessage = getItem();
+                    if (selectedMessage != null) {
+                        replyToMessage(selectedMessage);
+                    }
+                });
+
+                contextMenu.getItems().addAll(editItem, replyItem);
+            }
+
+            @Override
+            protected void updateItem(ChatMessage item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setContextMenu(null);
+                } else {
+                    setText(item.toString());
+                    setContextMenu(contextMenu);
+                }
+            }
+        });
+
+        chatListView.setOnMouseClicked(event -> {
+            if (event.getButton() == MouseButton.SECONDARY) {
+                event.consume(); // Consume the event to prevent it from interfering with cell selection
+            }
+        });
+
+        borderPane.setCenter(chatListView);
+
         inputField = new TextField();
-        inputField.setOnAction(e -> sendMessage(inputField, chatArea));
+        inputField.setOnAction(e -> sendMessage());
+        VBox vBox = new VBox(10);
+        vBox.getChildren().addAll(borderPane, inputField);
 
-        HBox inputBox = new HBox(inputField);
-        editField = new TextField();
-        editField.setPromptText("Edit your message");
-
-        editButton = new Button("Edit");
-        editButton.setOnAction(e -> editMessage(editField, chatArea));
-
-        HBox editBox = new HBox(editField, editButton);
-
-        VBox chatLayout = new VBox(chatArea, inputBox, editBox); // Add editBox to include editing UI
-        chatLayout.setSpacing(10);
-        chatLayout.setPadding(new Insets(10));
-
-        chatScene = new Scene(chatLayout, 400, 300);
+        chatScene = new Scene(vBox, 400, 300);
         primaryStage.setScene(chatScene);
     }
     
-
-    private void editMessage(TextField editField, TextArea chatArea) {
-        String editedMessage = editField.getText().trim();
-        if (!editedMessage.isEmpty()) {
-            // Replace the selected message with the edited message
-            int selectedIndex = chatArea.getSelection().getStart();
-            if (selectedIndex >= 0 && selectedIndex < chatClient.getChatHistory().size()) {
-                ChatMessage selectedMessage = chatClient.getChatHistory().get(selectedIndex);
-                selectedMessage.setTxt(editedMessage);
-                updateChatArea();
-                // You might want to notify the server about the edit action here
-            }
-        }
-        editField.clear();
+    private void editMessage(ChatMessage selectedMessage) {
+        TextInputDialog dialog = new TextInputDialog(selectedMessage.getTxt());
+        dialog.setTitle("Edit Message");
+        dialog.setHeaderText("Edit your message:");
+        Optional<String> result = dialog.showAndWait();
+        result.ifPresent(editedText -> {
+        	chatClient.editMessage(selectedMessage.getMessageId(), editedText);
+            selectedMessage.setTxt(editedText);
+            displayMessages();
+        });
     }
-    
-    private void sendMessage(TextField inputField, TextArea chatArea) {
-        String message = inputField.getText().trim();
+
+    private void sendMessage() {
+        String message = inputField.getText();
         if (!message.isEmpty()) {
             chatClient.sendMessage(message);
-//            chatArea.appendText("You: " + message + "\n");
             inputField.clear();
         }
     }
 
-    private void updateChatArea() {
-        String receivedMessage = chatClient.receiveMessage();
-        if (receivedMessage != null && !receivedMessage.isEmpty()) {
-            chatArea.appendText(receivedMessage + "\n");
-        }
+    private void replyToMessage(ChatMessage selectedMessage) {
+    	System.out.println("replyToMessage");
+    }
+
+    public void displayMessages() {
+        messages = chatClient.getChatHistory();
+        chatListView.getItems().setAll(messages);
     }
 }

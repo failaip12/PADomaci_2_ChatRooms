@@ -5,18 +5,21 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.UUID;
 
 import com.esotericsoftware.kryonet.Client;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
 
+import javafx.application.Platform;
 import rs.raf.pds.v4.z5.messages.ChatMessage;
+import rs.raf.pds.v4.z5.messages.ChatMessageList;
+import rs.raf.pds.v4.z5.messages.EditMessage;
 import rs.raf.pds.v4.z5.messages.InfoMessage;
 import rs.raf.pds.v4.z5.messages.KryoUtil;
 import rs.raf.pds.v4.z5.messages.ListUsers;
 import rs.raf.pds.v4.z5.messages.Login;
+import rs.raf.pds.v4.z5.messages.UpdatedChatMessage;
 import rs.raf.pds.v4.z5.messages.WhoRequest;
 
 public class ChatClient implements Runnable{
@@ -26,10 +29,8 @@ public class ChatClient implements Runnable{
 	
 	private volatile Thread thread = null;
 	
-	private BlockingQueue<String> receivedMessages = new LinkedBlockingQueue<>();
-	
 	volatile boolean running = false;
-	
+	private ChatClientGUI gui;
 	final Client client;
 	final String hostName;
 	final int portNumber;
@@ -37,19 +38,16 @@ public class ChatClient implements Runnable{
 	
     private List<ChatMessage> chatHistory;
 	
-	public ChatClient(String hostName, int portNumber, String userName) {
+	public ChatClient(ChatClientGUI gui, String hostName, int portNumber, String userName) {
 		this.client = new Client(DEFAULT_CLIENT_WRITE_BUFFER_SIZE, DEFAULT_CLIENT_READ_BUFFER_SIZE);
 		this.hostName = hostName;
 		this.portNumber = portNumber;
 		this.userName = userName;
+		this.gui = gui;
 		this.chatHistory = new ArrayList<ChatMessage>();
 		KryoUtil.registerKryoClasses(client.getKryo());
 		registerListener();
 	}
-	
-    public String receiveMessage() {
-        return receivedMessages.poll(); // Retrieves and removes the head of the queue, returns null if empty
-    }
     
     public List<ChatMessage> getChatHistory() {
         return chatHistory;
@@ -77,7 +75,26 @@ public class ChatClient implements Runnable{
 				
 				if (object instanceof InfoMessage) {
 					InfoMessage message = (InfoMessage)object;
-					showMessage("Server:"+message.getTxt());
+					String text = message.getTxt();
+					showMessage("Server:"+text);
+					return;
+				}
+				
+				if (object instanceof UpdatedChatMessage) {
+					UpdatedChatMessage message = (UpdatedChatMessage)object;
+					updateChatMessage(message);
+					Platform.runLater(() -> {
+					gui.displayMessages();
+					});
+					return;
+				}
+				
+				if (object instanceof ChatMessageList) {
+					ChatMessageList messageList = (ChatMessageList)object;
+					chatHistory = messageList.getMessageList();
+					Platform.runLater(() -> {
+					gui.displayMessages();
+					});
 					return;
 				}
 			}
@@ -87,24 +104,34 @@ public class ChatClient implements Runnable{
 			}
 		});
 	}
+	
+	private void updateChatMessage(UpdatedChatMessage chatMessage) {
+		for(ChatMessage message:chatHistory ) {
+			if(message.getMessageId().equals(chatMessage.getMessageId())) {
+				message.setTxt(chatMessage.getTxt());
+			}
+		}
+		System.out.println(chatMessage.getUser()+":"+chatMessage.getTxt());
+	}
+	
 	private void showChatMessage(ChatMessage chatMessage) {
 		chatHistory.add(chatMessage);
 		System.out.println(chatMessage.getUser()+":"+chatMessage.getTxt());
-		receivedMessages.offer(chatMessage.getUser()+":"+chatMessage.getTxt());
 	}
+	
 	private void showMessage(String txt) {
-		receivedMessages.offer(txt);
+		chatHistory.add(new ChatMessage(null, txt));
 		System.out.println(txt);
 	}
 	private void showOnlineUsers(String[] users) {
 		System.out.print("Server:");
-		receivedMessages.offer("Server:");
+		chatHistory.add(new ChatMessage(null, "Server:"));
 		for (int i=0; i<users.length; i++) {
 			String user = users[i];
 			System.out.print(user);
-			receivedMessages.offer(user);
+			chatHistory.add(new ChatMessage(null, user));
 			System.out.printf((i==users.length-1?"\n":", "));
-			receivedMessages.offer((i==users.length-1?"\n":", "));
+			chatHistory.add(new ChatMessage(null, (i==users.length-1?"\n":", ")));
 		}
 	}
 	public void start() throws IOException {
@@ -131,6 +158,12 @@ public class ChatClient implements Runnable{
 	public void sendMessage(String message) {
 	    if (client.isConnected()) {
 	        client.sendTCP(new ChatMessage(userName, message));
+	    }
+	}
+	
+	public void editMessage(UUID idMessage, String message) {
+	    if (client.isConnected()) {
+	        client.sendTCP(new EditMessage(idMessage, userName, message));
 	    }
 	}
 	
@@ -190,7 +223,7 @@ public class ChatClient implements Runnable{
         String userName = args[2];
         
         try{
-        	ChatClient chatClient = new ChatClient(hostName, portNumber, userName);
+        	ChatClient chatClient = new ChatClient(null, hostName, portNumber, userName);
         	chatClient.start();
         }catch(IOException e) {
         	e.printStackTrace();

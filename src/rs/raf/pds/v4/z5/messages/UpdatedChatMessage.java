@@ -2,24 +2,20 @@ package rs.raf.pds.v4.z5.messages;
 
 import java.util.UUID;
 
-public class ChatMessage {
+public class UpdatedChatMessage {
+
 	private String messageId; 
     private String user;
     private String txt;
 
-	public ChatMessage() {
+	protected UpdatedChatMessage() {
 		
 	}
 	
-    public ChatMessage(UUID messageId, String user, String txt) {
+    public UpdatedChatMessage(UUID messageId, String user, String txt) {
     	this.messageId = messageId.toString();
         this.user = user;
         this.txt = txt;
-    }
-
-    
-    public ChatMessage(String user, String txt) {
-        this(UUID.randomUUID(), user, txt);
     }
 
     public UUID getMessageId() {
@@ -33,18 +29,9 @@ public class ChatMessage {
     public String getTxt() {
         return txt;
     }
-    
-    public void setTxt(String txt) {
-		this.txt = txt;
-	}
 
 	@Override
     public String toString() {
-		if(user!=null) {
-			return user.toString() + ": " + txt.toString() + "\n";
-		}
-		else {
-			return txt.toString() + "\n";
-		}
+		return user.toString() + ": " + txt.toString() + "\n";
     }
 }
