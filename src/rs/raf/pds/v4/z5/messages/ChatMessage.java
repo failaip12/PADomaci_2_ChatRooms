@@ -13,14 +13,14 @@ public class ChatMessage {
 		return edited;
 	}
 
-	private ChatMessage messageRepliendTo = null;
+	private ChatMessage messageRepliedTo = null;
 
-	public ChatMessage getMessageRepliendTo() {
-		return messageRepliendTo;
+	public ChatMessage getMessageRepliedTo() {
+		return messageRepliedTo;
 	}
 
-	public void setMessageRepliendTo(ChatMessage messageRepliendTo) {
-		this.messageRepliendTo = messageRepliendTo;
+	public void setMessageRepliedTo(ChatMessage messageRepliedTo) {
+		this.messageRepliedTo = messageRepliedTo;
 	}
 
 	public boolean isReply() {
@@ -74,4 +74,17 @@ public class ChatMessage {
 			return txt.toString() + "\n";
 		}
     }
+	
+	@Override
+	public boolean equals(Object obj) {
+	    if (this == obj) {
+	        return true;
+	    }
+	    if (obj == null || getClass() != obj.getClass()) {
+	        return false;
+	    }
+
+	    ChatMessage message = (ChatMessage) obj;
+		return this.getMessageId().equals(message.getMessageId());
+	}
 }

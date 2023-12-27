@@ -12,6 +12,7 @@ public class KryoUtil {
 		kryo.register(String[].class);
 		kryo.register(Login.class);
 		kryo.register(ChatMessage.class);
+		kryo.register(FetchMessages.class);
 		
 		kryo.register(ChatMessageList.class);
 		kryo.register(List.class);

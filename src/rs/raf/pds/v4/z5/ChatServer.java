@@ -13,6 +13,7 @@ import com.esotericsoftware.kryonet.Server;
 import rs.raf.pds.v4.z5.messages.ChatMessage;
 import rs.raf.pds.v4.z5.messages.ChatMessageList;
 import rs.raf.pds.v4.z5.messages.EditMessage;
+import rs.raf.pds.v4.z5.messages.FetchMessages;
 import rs.raf.pds.v4.z5.messages.InfoMessage;
 import rs.raf.pds.v4.z5.messages.KryoUtil;
 import rs.raf.pds.v4.z5.messages.ListUsers;
@@ -34,7 +35,7 @@ public class ChatServer implements Listener, Runnable{
 	private String mainRoomName = "main";
 	
 	public ChatServer(int portNumber) {
-		mainRoom = new ChatRoom(mainRoomName);
+		mainRoom = new ChatRoom("Server: ", mainRoomName);
 		this.chatRooms = new ConcurrentHashMap<>();
 		this.chatRooms.put(mainRoomName, mainRoom);
 		this.server = new Server();
@@ -47,6 +48,7 @@ public class ChatServer implements Listener, Runnable{
 	private void inviteUserToChatRoom(Connection connSender, String roomName, String userNameInvited, String userNameInvitee) {
 		ChatRoom room = chatRooms.get(roomName);
 		if(room != null) {
+			room.addNewUser(userNameInvited);
 			InfoMessage infoMessageSender = new InfoMessage("Successfully invited the user " + userNameInvited + " to the ChatRoom " + roomName);
 			connSender.sendTCP(infoMessageSender);
 			
@@ -61,7 +63,8 @@ public class ChatServer implements Listener, Runnable{
 	}
 	
 	private void createChatRoom(Connection connSender, String roomName) {
-		chatRooms.put(roomName, new ChatRoom(roomName));
+		String user = connectionUserMap.get(connSender);
+		chatRooms.put(roomName, new ChatRoom(user, roomName));
 		InfoMessage infoMessageSender = new InfoMessage("Successfully created chat room " + roomName);
 		connSender.sendTCP(infoMessageSender);
 	}
@@ -84,7 +87,7 @@ public class ChatServer implements Listener, Runnable{
 	private void listRooms(Connection connSender, String userName) {
     	StringBuilder sb = new StringBuilder();
     	chatRooms.forEach((userNameRoom, chatRoom) -> {
-        	sb.append("Room Name: " + chatRoom.getRoomName() + "\n");
+        	sb.append(" Room Creator: " + chatRoom.getRoomCreator() + " Room Name: " + chatRoom.getRoomName() + "\n");
         });
 		InfoMessage infoMessageSender = new InfoMessage(sb.toString());
 		connSender.sendTCP(infoMessageSender);
@@ -93,10 +96,16 @@ public class ChatServer implements Listener, Runnable{
 	private void joinRoom(Connection connSender, String roomName, String userName) {
 		ChatRoom room = chatRooms.get(roomName);
 		if(room != null) {
-			userRoomMap.put(userName, room);
-			InfoMessage infoMessage = new InfoMessage("Successfully joined the room " + roomName);
-			connSender.sendTCP(infoMessage);
-			connSender.sendTCP(new ChatMessageList (room.lastFiveMessages()));
+			if(room.userInRoom(userName)) {
+				userRoomMap.put(userName, room);
+				InfoMessage infoMessage = new InfoMessage("Successfully joined the room " + roomName);
+				connSender.sendTCP(infoMessage);
+				connSender.sendTCP(new ChatMessageList (room.lastFiveMessages()));
+			}
+			else {
+				InfoMessage infoMessageSender = new InfoMessage("You aren't invited to this room!");
+				connSender.sendTCP(infoMessageSender);
+			}
 		}
 		else {
 			InfoMessage infoMessageSender = new InfoMessage("The room doesn't exist");
@@ -126,10 +135,7 @@ public class ChatServer implements Listener, Runnable{
 				    String userRoomName = userRoomMap.get(chatMessage.getUser()).getRoomName();
 				    String chatMessageText = chatMessage.getTxt();
 					System.out.println(chatMessage.getUser()+":" + chatMessageText);
-					if(chatMessage.isReply()) {
-						
-					}
-					else if(chatMessageText.startsWith(Constants.INVITE_COMMAND)) {
+					if(chatMessageText.startsWith(Constants.INVITE_COMMAND)) {
 				        // Split the input string by whitespace
 				        String[] parts = chatMessageText.split("\\s+");
 
@@ -191,20 +197,28 @@ public class ChatServer implements Listener, Runnable{
 				        }
 					}
 					else if(chatMessageText.startsWith(Constants.GET_MORE_MESSAGES_COMMAND)) {
-				        String[] parts = chatMessageText.split("\\s+", 2);
+				        String[] parts = chatMessageText.split("\\s+", 3);
 
 				        // Check if the input has the expected format
-				        if (parts.length == 2) {
+				        if (parts.length == 3) {
 				            String roomName = parts[1];
+				            int numberOfMessages = Integer.parseInt(parts[2]);
 				            ChatRoom room = chatRooms.get(roomName);
-							connection.sendTCP(new ChatMessageList (room.getMoreMessages()));
+				            if(room.userInRoom(chatMessage.getUser())) {
+				            	connection.sendTCP(new ChatMessageList (room.getLastXMessages(numberOfMessages)));
+				            }
+				            else {
+
+								InfoMessage infoMessageSender = new InfoMessage("You aren't invited to this room!");
+								connection.sendTCP(infoMessageSender);
+				            }
 				        } else {
-			    			InfoMessage infoMessageSender = new InfoMessage("Invalid get more messages format, the expected format is /get_more_messages room_name");
+			    			InfoMessage infoMessageSender = new InfoMessage("Invalid get more messages format, the expected format is /get_more_messages room_name number_of_messages");
 			    			connection.sendTCP(infoMessageSender);
 				        }
 					}
 					else {
-						broadcastChatMessage(connection, chatMessage, userRoomName); 
+						broadcastChatMessage(connection, chatMessage, userRoomName);
 					}
 					return;
 				}
@@ -227,6 +241,17 @@ public class ChatServer implements Listener, Runnable{
 				if (object instanceof WhoRequest) {
 					ListUsers listUsers = new ListUsers(getAllUsers());
 					connection.sendTCP(listUsers);
+					return;
+				}
+
+				if (object instanceof FetchMessages) {
+					FetchMessages fetchMessages = (FetchMessages)object;
+					ChatMessage message = fetchMessages.getMessage();
+					String roomName = userRoomMap.get(message.getUser()).getRoomName();
+					ChatRoom room = chatRooms.get(roomName);
+					List<ChatMessage> history = room.getMessageHistory();
+					int index = history.lastIndexOf(message);
+					connection.sendTCP(new ChatMessageList (room.getLastXMessages(history.size() - index)));
 					return;
 				}
 			}
@@ -330,7 +355,6 @@ public class ChatServer implements Listener, Runnable{
 			}
 		}
 	}
-	
 	
 	public static void main(String[] args) {
 		

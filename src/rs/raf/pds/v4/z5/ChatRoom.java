@@ -1,7 +1,9 @@
 package rs.raf.pds.v4.z5;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import rs.raf.pds.v4.z5.messages.ChatMessage;
@@ -9,19 +11,21 @@ import rs.raf.pds.v4.z5.messages.UpdatedChatMessage;
 
 public class ChatRoom {
 	private String roomName;
-	private ArrayList<String> userList;
-	private List<ChatMessage> messageHistory;
-	private final int GET_MORE_MESSAGES_LIMIT  = 20;
+	private String roomCreator;
+	private Set<String> userList;
+	private List<ChatMessage> messageHistory; //This should probably be a set
 	
-	public ChatRoom(String roomName, ArrayList<String> userList, List<ChatMessage> messageHistory) {
+	public ChatRoom(String roomName, Set<String> userList, List<ChatMessage> messageHistory) {
 		this.roomName = roomName;
 		this.messageHistory = messageHistory;
 		this.userList = userList;
 	}
 	
-	public ChatRoom(String roomName) {
+	public ChatRoom(String userName, String roomName) {
 		this.roomName = roomName;
-		this.userList =  new ArrayList<>();
+		this.roomCreator = userName;
+		this.userList =  new HashSet<String>();
+		this.addNewUser(userName);
 		this.messageHistory = new ArrayList<>();
 	}
 	
@@ -29,11 +33,18 @@ public class ChatRoom {
 		messageHistory.add(message);
 	}
 	
+	public boolean userInRoom(String userName) {
+		return userList.contains(userName);
+	}
+	
 	public void editMessage(UpdatedChatMessage updatedMessage) {
 		for(ChatMessage message:messageHistory) {
 			if(message.getMessageId().equals(updatedMessage.getMessageId())) {
 				message.setTxt(updatedMessage.getTxt());
 				message.setEdited();
+			}
+			if(message.isReply() && message.getMessageRepliedTo().getMessageId().equals(updatedMessage.getMessageId())) {
+				message.getMessageRepliedTo().setTxt(updatedMessage.getTxt());
 			}
 		}
 	}
@@ -50,10 +61,6 @@ public class ChatRoom {
 	public List<ChatMessage> lastFiveMessages() {
         return getLastXMessages(5);
 	}
-
-	public List<ChatMessage> getMoreMessages() {
-		return getLastXMessages(GET_MORE_MESSAGES_LIMIT);
-	}
 	
 	public List<ChatMessage> getLastXMessages(int limit) {
 	    int totalMessages = messageHistory.size();
@@ -64,11 +71,11 @@ public class ChatRoom {
 	}
 
 	
-	public ArrayList<String> getUserList() {
+	public Set<String> getUserList() {
 		return userList;
 	}
 
-	public void setUserList(ArrayList<String> userList) {
+	public void setUserList(Set<String> userList) {
 		this.userList = userList;
 	}
 
@@ -90,6 +97,10 @@ public class ChatRoom {
 	
 	public void addNewUser(String username) {
 		this.userList.add(username);
+	}
+
+	public String getRoomCreator() {
+		return roomCreator;
 	}
 	
 }

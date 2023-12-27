@@ -13,6 +13,4 @@ public class ListUsers {
 	public String[] getUsers() {
 		return users;
 	}
-	
-	
 }

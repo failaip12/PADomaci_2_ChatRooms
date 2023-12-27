@@ -15,6 +15,7 @@ import javafx.application.Platform;
 import rs.raf.pds.v4.z5.messages.ChatMessage;
 import rs.raf.pds.v4.z5.messages.ChatMessageList;
 import rs.raf.pds.v4.z5.messages.EditMessage;
+import rs.raf.pds.v4.z5.messages.FetchMessages;
 import rs.raf.pds.v4.z5.messages.InfoMessage;
 import rs.raf.pds.v4.z5.messages.KryoUtil;
 import rs.raf.pds.v4.z5.messages.ListUsers;
@@ -61,6 +62,9 @@ public class ChatClient implements Runnable{
 			}
 			
 			public void received (Connection connection, Object object) {
+				Platform.runLater(() -> {
+				gui.displayMessages();
+				});
 				if (object instanceof ChatMessage) {
 					ChatMessage chatMessage = (ChatMessage)object;
 					showChatMessage(chatMessage);
@@ -92,9 +96,6 @@ public class ChatClient implements Runnable{
 				if (object instanceof ChatMessageList) {
 					ChatMessageList messageList = (ChatMessageList)object;
 					chatHistory = messageList.getMessageList();
-					Platform.runLater(() -> {
-					gui.displayMessages();
-					});
 					return;
 				}
 			}
@@ -106,10 +107,13 @@ public class ChatClient implements Runnable{
 	}
 	
 	private void updateChatMessage(UpdatedChatMessage chatMessage) {
-		for(ChatMessage message:chatHistory ) {
+		for(ChatMessage message:chatHistory) {
 			if(message.getMessageId().equals(chatMessage.getMessageId())) {
 				message.setTxt(chatMessage.getTxt());
 				message.setEdited();
+			}
+			if(message.isReply() && message.getMessageRepliedTo().getMessageId().equals(chatMessage.getMessageId())) {
+				message.getMessageRepliedTo().setTxt(chatMessage.getTxt());
 			}
 		}
 		System.out.println(chatMessage.getUser()+":"+chatMessage.getTxt());
@@ -165,6 +169,13 @@ public class ChatClient implements Runnable{
 	public void sendReply(ChatMessage message) {
 	    if (client.isConnected()) {
 	        client.sendTCP(message);
+	    }
+	}
+	
+	public void jumpToMessageFetch (ChatMessage message) {
+		FetchMessages fMessage = new FetchMessages(message, userName);
+	    if (client.isConnected()) {
+	        client.sendTCP(fMessage);
 	    }
 	}
 	

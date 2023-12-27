@@ -2,12 +2,14 @@ package rs.raf.pds.v4.z5;
 
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import rs.raf.pds.v4.z5.messages.ChatMessage;
 
@@ -94,18 +96,7 @@ public class ChatClientGUI extends Application {
             }
             switchToChatWindow();
             // Start a separate thread to listen for incoming messages and update the GUI
-            new Thread(() -> {
-                while (chatClient.isRunning()) {
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException ex) {
-                        ex.printStackTrace();
-                    }
-                    if (primaryStage.getScene() == chatScene) {
-                        Platform.runLater(() -> displayMessages());
-                    }
-                }
-            }).start();
+
         }
     }
 
@@ -144,9 +135,21 @@ public class ChatClientGUI extends Application {
                     setText(null);
                     setContextMenu(null);
                 } else {
+                	setTextFill(Color.BLACK);
                     String text = item.toString();
                     if (item.isEdited()) {
                         text += " (Ed)";
+                    }
+                    if (item.isReply()) {
+                    	setTextFill(Color.GREEN);
+                        text = "Reply to	" + item.getMessageRepliedTo().getUser() + ": " + item.getMessageRepliedTo().getTxt() + "\n" + text;
+                        setOnMouseClicked(event -> {
+                            if (event.getButton() == MouseButton.PRIMARY) {
+                                jumpToOriginalMessage(item.getMessageRepliedTo());
+                            }
+                        });
+                    } else {
+                        setOnMouseClicked(null);
                     }
                     setText(text);
                     setContextMenu(contextMenu);
@@ -169,6 +172,20 @@ public class ChatClientGUI extends Application {
 
         chatScene = new Scene(vBox, 400, 300);
         primaryStage.setScene(chatScene);
+    }
+    
+    private void jumpToOriginalMessage(ChatMessage originalMessage) {//So close yet so far.
+    	ObservableList<ChatMessage> items = chatListView.getItems();
+    	int index = -1;
+    	for(ChatMessage item1:items) {
+    		if(item1.equals(originalMessage)) {
+    			index = chatListView.getItems().indexOf(item1);
+    		}
+    	}
+        if (index < 0) {
+        	chatClient.jumpToMessageFetch(originalMessage);
+        }
+        chatListView.scrollTo(index);
     }
     
     private void editMessage(ChatMessage selectedMessage) {
@@ -197,9 +214,9 @@ public class ChatClientGUI extends Application {
         dialog.setHeaderText("Reply to " + selectedMessage.getUser() + "'s message:");
         Optional<String> result = dialog.showAndWait();
         result.ifPresent(replyText -> {
-            ChatMessage message = new ChatMessage(selectedMessage.getMessageId(), selectedMessage.getUser(), selectedMessage.getTxt());
+            ChatMessage message = new ChatMessage(username, replyText);
             message.setReply();
-            message.setMessageRepliendTo(selectedMessage);
+            message.setMessageRepliedTo(selectedMessage);
             chatClient.sendReply(message);
         });
     }
