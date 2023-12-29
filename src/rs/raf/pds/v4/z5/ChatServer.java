@@ -239,11 +239,17 @@ public class ChatServer implements Listener, Runnable{
 								return;
 							}
 				            ChatRoom room = chatRooms.get(roomName);
-				            if(room.userInRoom(chatMessage.getUser())) {
-				            	connection.sendTCP(new ChatMessageLinkedHashSet (room.getLastXMessages(numberOfMessages)));
+				            if(room != null) {
+					            if(room.userInRoom(chatMessage.getUser())) {
+					            	connection.sendTCP(new ChatMessageLinkedHashSet (room.getLastXMessages(numberOfMessages)));
+					            }
+					            else {
+									InfoMessage infoMessageSender = new InfoMessage("You aren't invited to this room!");
+									connection.sendTCP(infoMessageSender);
+					            }
 				            }
 				            else {
-								InfoMessage infoMessageSender = new InfoMessage("You aren't invited to this room!");
+								InfoMessage infoMessageSender = new InfoMessage("The room doesn't exist");
 								connection.sendTCP(infoMessageSender);
 				            }
 				        } else {
