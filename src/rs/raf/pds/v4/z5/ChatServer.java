@@ -49,14 +49,22 @@ public class ChatServer implements Listener, Runnable{
 	
 	private void inviteUserToChatRoom(Connection connSender, String roomName, String userNameInvited, String userNameInvitee) {
 		ChatRoom room = chatRooms.get(roomName);
-		if(room != null) {
-			room.addNewUser(userNameInvited);
-			InfoMessage infoMessageSender = new InfoMessage("Successfully invited the user " + userNameInvited + " to the ChatRoom " + roomName);
-			connSender.sendTCP(infoMessageSender);
+		if(room != null) {		
 			
 			Connection connInvited = userConnectionMap.get(userNameInvited);
-			InfoMessage infoMessageInvited = new InfoMessage("You got invited to the chatRoom " + roomName + " by user " + userNameInvitee);
-			connInvited.sendTCP(infoMessageInvited);
+			if(connInvited != null) {
+				InfoMessage infoMessageInvited = new InfoMessage("You got invited to the chatRoom " + roomName + " by user " + userNameInvitee);
+				connInvited.sendTCP(infoMessageInvited);
+				
+				room.addNewUser(userNameInvited);
+				InfoMessage infoMessageSender = new InfoMessage("Successfully invited the user " + userNameInvited + " to the ChatRoom " + roomName);
+				connSender.sendTCP(infoMessageSender);
+			}
+			else {
+				InfoMessage infoMessageInvitee = new InfoMessage("The user doesnt exist/isn't online");
+				connSender.sendTCP(infoMessageInvitee);
+			}
+
 		}
 		else {
 			InfoMessage infoMessageInvitee = new InfoMessage("The room doesnt exist");
