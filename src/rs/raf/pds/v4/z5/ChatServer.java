@@ -49,8 +49,7 @@ public class ChatServer implements Listener, Runnable{
 	
 	private void inviteUserToChatRoom(Connection connSender, String roomName, String userNameInvited, String userNameInvitee) {
 		ChatRoom room = chatRooms.get(roomName);
-		if(room != null) {		
-			
+		if(room != null) {
 			Connection connInvited = userConnectionMap.get(userNameInvited);
 			if(connInvited != null) {
 				InfoMessage infoMessageInvited = new InfoMessage("You got invited to the chatRoom " + roomName + " by user " + userNameInvitee);
@@ -74,9 +73,15 @@ public class ChatServer implements Listener, Runnable{
 	
 	private void createChatRoom(Connection connSender, String roomName) {
 		String user = connectionUserMap.get(connSender);
-		chatRooms.put(roomName, new ChatRoom(user, roomName));
-		InfoMessage infoMessageSender = new InfoMessage("Successfully created chat room " + roomName);
-		connSender.sendTCP(infoMessageSender);
+		if(chatRooms.get(roomName) == null) {
+			chatRooms.put(roomName, new ChatRoom(user, roomName));
+			InfoMessage infoMessageSender = new InfoMessage("Successfully created chat room " + roomName);
+			connSender.sendTCP(infoMessageSender);
+		}
+		else {
+			InfoMessage infoMessageSender = new InfoMessage("A room with that name already exists");
+			connSender.sendTCP(infoMessageSender);
+		}
 	}
 	
 	private void sendPrivateMessage(Connection exception, String targetUserName, String message, String senderUserName) {

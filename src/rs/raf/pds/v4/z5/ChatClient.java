@@ -165,7 +165,17 @@ public class ChatClient implements Runnable{
 	}
 	
 	public void connect() throws IOException {
-		client.connect(1000, hostName, portNumber);
+	    Thread thread = new Thread(() -> {
+	        try {
+	            client.connect(1000, hostName, portNumber);
+	            while (running) {
+	                client.update(0); // Handle communication in a separate thread
+	            }
+	        } catch (IOException e) {
+	            e.printStackTrace();
+	        }
+	    });
+	    thread.start();
 	}
 	
 	public void sendMessage(String message) {
