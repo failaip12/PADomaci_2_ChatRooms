@@ -51,7 +51,7 @@ public class ChatServer implements Listener, Runnable{
 		ChatRoom room = chatRooms.get(roomName);
 		if(room != null) {
 			Connection connInvited = userConnectionMap.get(userNameInvited);
-			if(connInvited != null) {
+			if(connInvited != null && connInvited.isConnected()) {
 				InfoMessage infoMessageInvited = new InfoMessage("You got invited to the chatRoom " + roomName + " by user " + userNameInvitee);
 				connInvited.sendTCP(infoMessageInvited);
 				
@@ -98,6 +98,10 @@ public class ChatServer implements Listener, Runnable{
 	        ChatMessage privateMessageSender = new ChatMessage(targetUserName, "PRIVATE: " + message);
 	        privateMessageSender.setPrivateMessage();
 	        exception.sendTCP(privateMessageSender);
+	    }
+	    else {
+			InfoMessage infoMessageSender = new InfoMessage("The user doesnt exist/isn't online");
+			exception.sendTCP(infoMessageSender);
 	    }
 	}
 	
