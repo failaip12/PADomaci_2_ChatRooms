@@ -3,8 +3,7 @@ package rs.raf.pds.v4.z5;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.UUID;
 
 import com.esotericsoftware.kryonet.Client;
@@ -13,7 +12,7 @@ import com.esotericsoftware.kryonet.Listener;
 
 import javafx.application.Platform;
 import rs.raf.pds.v4.z5.messages.ChatMessage;
-import rs.raf.pds.v4.z5.messages.ChatMessageList;
+import rs.raf.pds.v4.z5.messages.ChatMessageLinkedHashSet;
 import rs.raf.pds.v4.z5.messages.EditMessage;
 import rs.raf.pds.v4.z5.messages.FetchMessages;
 import rs.raf.pds.v4.z5.messages.InfoMessage;
@@ -37,7 +36,7 @@ public class ChatClient implements Runnable{
 	final int portNumber;
 	final String userName;
 	
-    private List<ChatMessage> chatHistory;
+    private LinkedHashSet<ChatMessage> chatHistory;
 	
 	public ChatClient(ChatClientGUI gui, String hostName, int portNumber, String userName) {
 		this.client = new Client(DEFAULT_CLIENT_WRITE_BUFFER_SIZE, DEFAULT_CLIENT_READ_BUFFER_SIZE);
@@ -45,12 +44,12 @@ public class ChatClient implements Runnable{
 		this.portNumber = portNumber;
 		this.userName = userName;
 		this.gui = gui;
-		this.chatHistory = new ArrayList<ChatMessage>();
+		this.chatHistory = new LinkedHashSet<ChatMessage>();
 		KryoUtil.registerKryoClasses(client.getKryo());
 		registerListener();
 	}
     
-    public List<ChatMessage> getChatHistory() {
+    public LinkedHashSet<ChatMessage> getChatHistory() {
         return chatHistory;
     }
     
@@ -62,18 +61,21 @@ public class ChatClient implements Runnable{
 			}
 			
 			public void received (Connection connection, Object object) {
-				Platform.runLater(() -> {
-				gui.displayMessages();
-				});
 				if (object instanceof ChatMessage) {
 					ChatMessage chatMessage = (ChatMessage)object;
 					showChatMessage(chatMessage);
+					Platform.runLater(() -> {
+						gui.displayMessages();
+					});
 					return;
 				}
 
 				if (object instanceof ListUsers) {
 					ListUsers listUsers = (ListUsers)object;
 					showOnlineUsers(listUsers.getUsers());
+					Platform.runLater(() -> {
+						gui.displayMessages();
+					});
 					return;
 				}
 				
@@ -81,6 +83,9 @@ public class ChatClient implements Runnable{
 					InfoMessage message = (InfoMessage)object;
 					String text = message.getTxt();
 					showMessage("Server:"+text);
+					Platform.runLater(() -> {
+						gui.displayMessages();
+					});
 					return;
 				}
 				
@@ -88,14 +93,17 @@ public class ChatClient implements Runnable{
 					UpdatedChatMessage message = (UpdatedChatMessage)object;
 					updateChatMessage(message);
 					Platform.runLater(() -> {
-					gui.displayMessages();
+						gui.displayMessages();
 					});
 					return;
 				}
 				
-				if (object instanceof ChatMessageList) {
-					ChatMessageList messageList = (ChatMessageList)object;
+				if (object instanceof ChatMessageLinkedHashSet) {
+					ChatMessageLinkedHashSet messageList = (ChatMessageLinkedHashSet)object;
 					chatHistory = messageList.getMessageList();
+					Platform.runLater(() -> {
+						gui.displayMessages();
+					});
 					return;
 				}
 			}

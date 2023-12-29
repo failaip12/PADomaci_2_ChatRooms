@@ -14,8 +14,7 @@ import javafx.stage.Stage;
 import rs.raf.pds.v4.z5.messages.ChatMessage;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Optional;
 
 public class ChatClientGUI extends Application {
@@ -29,7 +28,7 @@ public class ChatClientGUI extends Application {
     private TextField portField;
     private Scene chatScene;
     public String username;
-    private List<ChatMessage> messages = new ArrayList<>();
+    private LinkedHashSet<ChatMessage> messages = new LinkedHashSet<ChatMessage>();
 
     public static void main(String[] args) {
         launch(args);

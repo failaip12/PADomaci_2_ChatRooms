@@ -2,17 +2,23 @@ package rs.raf.pds.v4.z5.messages;
 
 import java.util.UUID;
 
-public class ChatMessage {
+
+public class ChatMessage{
 	private String messageId; 
     private String user;
     private String txt;
     private boolean reply = false;
     private boolean edited = false;
+    private boolean privateMessage = false;
     
     public boolean isEdited() {
 		return edited;
 	}
-
+    
+    public boolean isPrivateMessage() {
+		return privateMessage;
+	}
+    
 	private ChatMessage messageRepliedTo = null;
 
 	public ChatMessage getMessageRepliedTo() {
@@ -39,6 +45,10 @@ public class ChatMessage {
 
     public void setReply() {
     	this.reply = true;
+    }
+    
+    public void setPrivateMessage() {
+    	this.privateMessage = true;
     }
     
     public void setEdited() {

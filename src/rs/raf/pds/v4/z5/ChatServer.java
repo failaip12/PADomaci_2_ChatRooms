@@ -1,6 +1,8 @@
 package rs.raf.pds.v4.z5;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,7 +13,7 @@ import com.esotericsoftware.kryonet.Listener;
 import com.esotericsoftware.kryonet.Server;
 
 import rs.raf.pds.v4.z5.messages.ChatMessage;
-import rs.raf.pds.v4.z5.messages.ChatMessageList;
+import rs.raf.pds.v4.z5.messages.ChatMessageLinkedHashSet;
 import rs.raf.pds.v4.z5.messages.EditMessage;
 import rs.raf.pds.v4.z5.messages.FetchMessages;
 import rs.raf.pds.v4.z5.messages.InfoMessage;
@@ -78,8 +80,10 @@ public class ChatServer implements Listener, Runnable{
 	    if (targetConnection != null && targetConnection.isConnected() && targetConnection != exception) {
 	        // Create a private message object or use the appropriate method to send the message
 	    	ChatMessage privateMessageReciever = new ChatMessage(senderUserName, "PRIVATE: " + message);
+	    	privateMessageReciever.setPrivateMessage();
 	        targetConnection.sendTCP(privateMessageReciever);
 	        ChatMessage privateMessageSender = new ChatMessage(targetUserName, "PRIVATE: " + message);
+	        privateMessageSender.setPrivateMessage();
 	        exception.sendTCP(privateMessageSender);
 	    }
 	}
@@ -100,7 +104,7 @@ public class ChatServer implements Listener, Runnable{
 				userRoomMap.put(userName, room);
 				InfoMessage infoMessage = new InfoMessage("Successfully joined the room " + roomName);
 				connSender.sendTCP(infoMessage);
-				connSender.sendTCP(new ChatMessageList (room.lastFiveMessages()));
+				connSender.sendTCP(new ChatMessageLinkedHashSet (room.lastFiveMessages()));
 			}
 			else {
 				InfoMessage infoMessageSender = new InfoMessage("You aren't invited to this room!");
@@ -120,7 +124,7 @@ public class ChatServer implements Listener, Runnable{
 					Login login = (Login)object;
 					newUserLogged(login, connection);
 					connection.sendTCP(new InfoMessage("Hello "+login.getUserName()));
-					connection.sendTCP(new ChatMessageList (mainRoom.lastFiveMessages()));
+					connection.sendTCP(new ChatMessageLinkedHashSet (mainRoom.lastFiveMessages()));
 					try {
 						Thread.sleep(2000);
 					} catch (InterruptedException e) {
@@ -135,6 +139,11 @@ public class ChatServer implements Listener, Runnable{
 				    String userRoomName = userRoomMap.get(chatMessage.getUser()).getRoomName();
 				    String chatMessageText = chatMessage.getTxt();
 					System.out.println(chatMessage.getUser()+":" + chatMessageText);
+					if(chatMessage.isReply()) {
+						if(chatMessage.getMessageRepliedTo().isPrivateMessage()) {
+							
+						}
+					}
 					if(chatMessageText.startsWith(Constants.INVITE_COMMAND)) {
 				        // Split the input string by whitespace
 				        String[] parts = chatMessageText.split("\\s+");
@@ -198,17 +207,25 @@ public class ChatServer implements Listener, Runnable{
 					}
 					else if(chatMessageText.startsWith(Constants.GET_MORE_MESSAGES_COMMAND)) {
 				        String[] parts = chatMessageText.split("\\s+", 3);
-
+				        int numberOfMessages = 0;
 				        // Check if the input has the expected format
 				        if (parts.length == 3) {
 				            String roomName = parts[1];
-				            int numberOfMessages = Integer.parseInt(parts[2]);
+				            try {
+				            	numberOfMessages = Integer.parseInt(parts[2]);
+				            }
+				            catch (NumberFormatException e) {
+								// TODO Auto-generated catch block
+								//e.printStackTrace();
+				            	InfoMessage infoMessageSender = new InfoMessage("number_of_message has to be a valid integer");
+								connection.sendTCP(infoMessageSender);
+								return;
+							}
 				            ChatRoom room = chatRooms.get(roomName);
 				            if(room.userInRoom(chatMessage.getUser())) {
-				            	connection.sendTCP(new ChatMessageList (room.getLastXMessages(numberOfMessages)));
+				            	connection.sendTCP(new ChatMessageLinkedHashSet (room.getLastXMessages(numberOfMessages)));
 				            }
 				            else {
-
 								InfoMessage infoMessageSender = new InfoMessage("You aren't invited to this room!");
 								connection.sendTCP(infoMessageSender);
 				            }
@@ -237,6 +254,7 @@ public class ChatServer implements Listener, Runnable{
 					else {
 						System.out.println("GRESKA");
 					}
+					return;
 				}
 				if (object instanceof WhoRequest) {
 					ListUsers listUsers = new ListUsers(getAllUsers());
@@ -249,9 +267,10 @@ public class ChatServer implements Listener, Runnable{
 					ChatMessage message = fetchMessages.getMessage();
 					String roomName = userRoomMap.get(message.getUser()).getRoomName();
 					ChatRoom room = chatRooms.get(roomName);
-					List<ChatMessage> history = room.getMessageHistory();
-					int index = history.lastIndexOf(message);
-					connection.sendTCP(new ChatMessageList (room.getLastXMessages(history.size() - index)));
+					LinkedHashSet<ChatMessage> history = room.getMessageHistory();
+					List<ChatMessage> messageList = new ArrayList<>(history);
+					int index = messageList.lastIndexOf(message);
+					connection.sendTCP(new ChatMessageLinkedHashSet (room.getLastXMessages(history.size() - index)));
 					return;
 				}
 			}
