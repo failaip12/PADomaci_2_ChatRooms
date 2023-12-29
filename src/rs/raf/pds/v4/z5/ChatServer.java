@@ -32,6 +32,7 @@ public class ChatServer implements Listener, Runnable{
 	ConcurrentMap<String, Connection> userConnectionMap = new ConcurrentHashMap<String, Connection>();
 	ConcurrentMap<String, ChatRoom> userRoomMap = new ConcurrentHashMap<String, ChatRoom>();
 	ConcurrentMap<Connection, String> connectionUserMap = new ConcurrentHashMap<Connection, String>();
+	ConcurrentMap<Connection, Boolean> connectionBoolMap = new ConcurrentHashMap<Connection, Boolean>();
 	private ConcurrentMap<String, ChatRoom> chatRooms;
 	private ChatRoom mainRoom;
 	private String mainRoomName = "main";
@@ -139,14 +140,19 @@ public class ChatServer implements Listener, Runnable{
 			public void received (Connection connection, Object object) {
 				if (object instanceof Login) {
 					Login login = (Login)object;
-					newUserLogged(login, connection);
-					connection.sendTCP(new InfoMessage("Hello "+login.getUserName()));
-					connection.sendTCP(new ChatMessageLinkedHashSet (mainRoom.lastFiveMessages()));
-					try {
-						Thread.sleep(2000);
-					} catch (InterruptedException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+					if(newUserLogged(login, connection)) {
+						connection.sendTCP(new InfoMessage("Hello "+login.getUserName()));
+						connection.sendTCP(new ChatMessageLinkedHashSet (mainRoom.lastFiveMessages()));
+						try {
+							Thread.sleep(2000);
+						} catch (InterruptedException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+					else {
+						connectionBoolMap.put(connection, true);
+						connection.close();
 					}
 					return;
 				}
@@ -299,10 +305,15 @@ public class ChatServer implements Listener, Runnable{
 			}
 			
 			public void disconnected(Connection connection) {
-				String user = connectionUserMap.get(connection);
-				connectionUserMap.remove(connection);
-				userConnectionMap.remove(user);
-				showTextToAll(user+" has disconnected!", connection);
+				if(connectionBoolMap.get(connection)) {
+					connectionBoolMap.remove(connection);
+				}
+				else {
+					String user = connectionUserMap.get(connection);
+					connectionUserMap.remove(connection);
+					userConnectionMap.remove(user);
+					showTextToAll(user+" has disconnected!", connection);
+				}
 			}
 		});
 	}
@@ -317,12 +328,20 @@ public class ChatServer implements Listener, Runnable{
 		
 		return users;
 	}
-	void newUserLogged(Login loginMessage, Connection conn) {
-		userConnectionMap.put(loginMessage.getUserName(), conn);
-		connectionUserMap.put(conn, loginMessage.getUserName());
-		userRoomMap.put(loginMessage.getUserName(), mainRoom);
-		mainRoom.addNewUser(loginMessage.getUserName());
-		showTextToAll("User "+loginMessage.getUserName()+" has connected!", conn);
+	boolean newUserLogged(Login loginMessage, Connection conn) {
+		if(userConnectionMap.get(loginMessage.getUserName()) == null) {
+			userConnectionMap.put(loginMessage.getUserName(), conn);
+			connectionUserMap.put(conn, loginMessage.getUserName());
+			userRoomMap.put(loginMessage.getUserName(), mainRoom);
+			mainRoom.addNewUser(loginMessage.getUserName());
+			showTextToAll("User "+loginMessage.getUserName()+" has connected!", conn);
+			return true;
+		}
+		else {
+			InfoMessage infoMessage = new InfoMessage("You cannot use that username.");
+			conn.sendTCP(infoMessage);
+			return false;
+		}
 	}
 	private void broadcastChatMessage(Connection exception, ChatMessage message, String chatRoomName) {
         ChatRoom room = chatRooms.get(chatRoomName);
