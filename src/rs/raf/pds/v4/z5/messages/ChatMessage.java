@@ -5,12 +5,15 @@ import java.util.UUID;
 
 public class ChatMessage{
 	private String messageId; 
-    private String user;
-    private String txt;
+    private String sender;
+    private String reciever = null;
+
+	private String txt;
     private boolean reply = false;
     private boolean edited = false;
     private boolean privateMessage = false;
-    
+
+	private ChatMessage messageRepliedTo = null;
     public boolean isEdited() {
 		return edited;
 	}
@@ -18,8 +21,14 @@ public class ChatMessage{
     public boolean isPrivateMessage() {
 		return privateMessage;
 	}
-    
-	private ChatMessage messageRepliedTo = null;
+
+    public String getReciever() {
+		return reciever;
+	}
+
+	public void setReciever(String reciever) {
+		this.reciever = reciever;
+	}
 
 	public ChatMessage getMessageRepliedTo() {
 		return messageRepliedTo;
@@ -39,7 +48,7 @@ public class ChatMessage{
 	
     public ChatMessage(UUID messageId, String user, String txt) {
     	this.messageId = messageId.toString();
-        this.user = user;
+        this.sender = user;
         this.txt = txt;
     }
 
@@ -63,8 +72,8 @@ public class ChatMessage{
         return UUID.fromString(messageId);
     }
 
-    public String getUser() {
-        return user;
+    public String getSender() {
+        return sender;
     }
 
     public String getTxt() {
@@ -77,8 +86,11 @@ public class ChatMessage{
 
 	@Override
     public String toString() {
-		if(user!=null) {
-			return user.toString() + ": " + txt.toString() + "\n";
+		if(sender!=null) {
+			if(privateMessage) {
+				return "(PRIVATE) FROM:" + sender.toString() + " " + txt.toString() + "\n";
+			}
+			return sender.toString() + ": " + txt.toString() + "\n";
 		}
 		else {
 			return txt.toString() + "\n";

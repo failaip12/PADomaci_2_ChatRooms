@@ -1,10 +1,9 @@
 package rs.raf.pds.v4.z5.messages;
 
-import java.util.UUID;
 
 public class EditMessage {
 
-	private String messageId; 
+	private ChatMessage message; 
     private String user;
     private String txt;
 
@@ -12,14 +11,14 @@ public class EditMessage {
 		
 	}
 	
-    public EditMessage(UUID messageId, String user, String txt) {
-    	this.messageId = messageId.toString();
+    public EditMessage(ChatMessage message, String user, String txt) {
+    	this.message = message;
         this.user = user;
         this.txt = txt;
     }
 
-    public UUID getMessageId() {
-        return UUID.fromString(messageId);
+    public ChatMessage getMessage() {
+        return message;
     }
 
     public String getUser() {

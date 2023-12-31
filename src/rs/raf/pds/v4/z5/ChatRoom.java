@@ -13,7 +13,8 @@ public class ChatRoom {
 	private String roomName;
 	private String roomCreator;
 	private Set<String> userList;
-	private LinkedHashSet<ChatMessage> messageHistory; 
+	private LinkedHashSet<ChatMessage> messageHistory;
+	private boolean private_chat = false;
 	
 	public ChatRoom(String roomName, Set<String> userList, LinkedHashSet<ChatMessage> messageHistory) {
 		this.roomName = roomName;
@@ -27,6 +28,14 @@ public class ChatRoom {
 		this.userList =  new HashSet<String>();
 		this.addNewUser(userName);
 		this.messageHistory = new LinkedHashSet<ChatMessage>();
+	}
+	
+	public boolean isPrivate_chat() {
+		return private_chat;
+	}
+
+	public void setPrivate_chat() {
+		this.private_chat = true;
 	}
 	
 	public void addMessageToHistory(ChatMessage message) {

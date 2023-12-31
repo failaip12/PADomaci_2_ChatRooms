@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.LinkedHashSet;
-import java.util.UUID;
 
 import com.esotericsoftware.kryonet.Client;
 import com.esotericsoftware.kryonet.Connection;
@@ -129,7 +128,7 @@ public class ChatClient implements Runnable{
 	
 	private void showChatMessage(ChatMessage chatMessage) {
 		chatHistory.add(chatMessage);
-		System.out.println(chatMessage.getUser()+":"+chatMessage.getTxt());
+		System.out.println(chatMessage.getSender()+":"+chatMessage.getTxt());
 	}
 	
 	private void showMessage(String txt) {
@@ -197,9 +196,9 @@ public class ChatClient implements Runnable{
 	    }
 	}
 	
-	public void editMessage(UUID idMessage, String message) {
+	public void editMessage(ChatMessage message, String editedmessage) {
 	    if (client.isConnected()) {
-	        client.sendTCP(new EditMessage(idMessage, userName, message));
+	        client.sendTCP(new EditMessage(message, userName, editedmessage));
 	    }
 	}
 	

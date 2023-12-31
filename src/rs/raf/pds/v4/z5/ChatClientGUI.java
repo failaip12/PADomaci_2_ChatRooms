@@ -111,7 +111,7 @@ public class ChatClientGUI extends Application {
                 MenuItem editItem = new MenuItem("Edit");
                 editItem.setOnAction(e -> {
                     ChatMessage selectedMessage = getItem();
-                    if (selectedMessage != null && username.equals(selectedMessage.getUser())) {
+                    if (selectedMessage != null && username.equals(selectedMessage.getSender())) {
                         editMessage(selectedMessage);
                     }
                 });
@@ -141,7 +141,7 @@ public class ChatClientGUI extends Application {
                     }
                     if (item.isReply()) {
                     	setTextFill(Color.GREEN);
-                        text = "Reply to	" + item.getMessageRepliedTo().getUser() + ": " + item.getMessageRepliedTo().getTxt() + "\n" + text;
+                        text = "Reply to	" + item.getMessageRepliedTo().getSender() + ": " + item.getMessageRepliedTo().getTxt() + "\n" + text;
                         setOnMouseClicked(event -> {
                             if (event.getButton() == MouseButton.PRIMARY) {
                                 jumpToOriginalMessage(item.getMessageRepliedTo());
@@ -193,7 +193,7 @@ public class ChatClientGUI extends Application {
         dialog.setHeaderText("Edit your message:");
         Optional<String> result = dialog.showAndWait();
         result.ifPresent(editedText -> {
-        	chatClient.editMessage(selectedMessage.getMessageId(), editedText);
+        	chatClient.editMessage(selectedMessage, editedText);
             selectedMessage.setTxt(editedText);
             displayMessages();
         });
@@ -210,12 +210,15 @@ public class ChatClientGUI extends Application {
     private void replyToMessage(ChatMessage selectedMessage) {
         TextInputDialog dialog = new TextInputDialog();
         dialog.setTitle("Reply to Message");
-        dialog.setHeaderText("Reply to " + selectedMessage.getUser() + "'s message:");
+        dialog.setHeaderText("Reply to " + selectedMessage.getSender() + "'s message:");
         Optional<String> result = dialog.showAndWait();
         result.ifPresent(replyText -> {
             ChatMessage message = new ChatMessage(username, replyText);
             message.setReply();
             message.setMessageRepliedTo(selectedMessage);
+        	if(selectedMessage.isPrivateMessage()) {
+        		message.setPrivateMessage();
+        	}
             chatClient.sendReply(message);
         });
     }
