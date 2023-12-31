@@ -155,7 +155,7 @@ public class ChatServer implements Listener, Runnable{
 				userRoomMap.put(userNameSender, room);
 				InfoMessage infoMessage = new InfoMessage("Successfully joined the private room " + userNameReciever);
 				connSender.sendTCP(infoMessage);
-				connSender.sendTCP(new ChatMessageLinkedHashSet (room.lastFiveMessages()));
+				connSender.sendTCP(new ChatMessageLinkedHashSet (room.getMessageHistory()));
 			}
 			else {
 				InfoMessage infoMessageSender = new InfoMessage("You aren't invited to this room!");
@@ -230,7 +230,7 @@ public class ChatServer implements Listener, Runnable{
 				        // Check if the input has the expected format
 				        if (parts.length == 3) {
 				            String roomName = parts[1];
-				            String userName = parts[2];
+				            String userName = parts[2].trim();
 				            if(chatMessage.getSender() != userName) {
 				            	inviteUserToChatRoom(connection, roomName, userName, chatMessage.getSender());
 				            }
@@ -277,8 +277,8 @@ public class ChatServer implements Listener, Runnable{
 
 				        // Check if the input has the expected format
 				        if (parts.length == 2) {
-				            String userName = parts[1];
-				            if(userName != chatMessage.getSender()) {
+				            String userName = parts[1].trim();
+				            if(!userName.equals(chatMessage.getSender())) {
 				            	joinPrivateRoom(connection, chatMessage.getSender(), userName);
 				            }
 				            else {
