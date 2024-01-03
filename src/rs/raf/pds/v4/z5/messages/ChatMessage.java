@@ -7,18 +7,38 @@ public class ChatMessage{
 	private String messageId; 
     private String sender;
     private String reciever = null;
-
+    private String roomName = null;
 	private String txt;
     private boolean reply = false;
     private boolean edited = false;
     private boolean privateMessage = false;
 
 	private ChatMessage messageRepliedTo = null;
+
+
+	public ChatMessage() {
+		
+	}
+	
+    public ChatMessage(UUID messageId, String user, String txt) {
+    	this.messageId = messageId.toString();
+        this.sender = user;
+        this.txt = txt;
+    }
+	
     public boolean isEdited() {
 		return edited;
 	}
     
-    public boolean isPrivateMessage() {
+    public String getRoomName() {
+		return roomName;
+	}
+
+	public void setRoomName(String roomName) {
+		this.roomName = roomName;
+	}
+
+	public boolean isPrivateMessage() {
 		return privateMessage;
 	}
 
@@ -41,16 +61,6 @@ public class ChatMessage{
 	public boolean isReply() {
 		return reply;
 	}
-
-	public ChatMessage() {
-		
-	}
-	
-    public ChatMessage(UUID messageId, String user, String txt) {
-    	this.messageId = messageId.toString();
-        this.sender = user;
-        this.txt = txt;
-    }
 
     public void setReply() {
     	this.reply = true;
@@ -87,8 +97,8 @@ public class ChatMessage{
 	@Override
     public String toString() {
 		if(sender!=null) {
-			if(privateMessage) {
-				return "(PRIVATE) FROM:" + sender.toString() + " " + txt.toString() + "\n";
+			if(roomName != null) {
+				return "(" + roomName + ") " + sender.toString() + ": " + txt.toString() + "\n";
 			}
 			return sender.toString() + ": " + txt.toString() + "\n";
 		}

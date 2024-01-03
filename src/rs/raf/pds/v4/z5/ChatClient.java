@@ -81,7 +81,7 @@ public class ChatClient implements Runnable{
 				if (object instanceof InfoMessage) {
 					InfoMessage message = (InfoMessage)object;
 					String text = message.getTxt();
-					showMessage("Server:"+text);
+					showMessage("(SERVER) :" + text);
 					Platform.runLater(() -> {
 						gui.displayMessages();
 					});

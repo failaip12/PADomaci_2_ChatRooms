@@ -87,7 +87,7 @@ public class ChatServer implements Listener, Runnable{
 		}
 	}
 	
-    private ChatRoom getChatRoom(String user1, String user2) {
+    private ChatRoom getPrivateChatRoom(String user1, String user2) {
         String key = generateKey(user1, user2);
 
         // Retrieve or create a chat room based on the key
@@ -106,13 +106,14 @@ public class ChatServer implements Listener, Runnable{
 	    if(targetConnection == exception) {
 			InfoMessage infoMessageSender = new InfoMessage("You cannot send a private message to yourself");
 			exception.sendTCP(infoMessageSender);
+			return;
 	    }
 	    if (targetConnection != null && targetConnection.isConnected() && targetConnection != exception) {
 	        // Create a private message object or use the appropriate method to send the message
 	    	ChatMessage privateMessage = new ChatMessage(senderUserName, message);
 	    	privateMessage.setPrivateMessage();
 	    	privateMessage.setReciever(targetUserName);
-    		ChatRoom pChatRoom = getChatRoom(targetUserName, senderUserName);
+    		ChatRoom pChatRoom = getPrivateChatRoom(targetUserName, senderUserName);
     		pChatRoom.addMessageToHistory(privateMessage);
 	    	targetConnection.sendTCP(privateMessage);
 	        exception.sendTCP(privateMessage);
@@ -129,7 +130,7 @@ public class ChatServer implements Listener, Runnable{
 	    	privateMessage.setReciever(connectionUserMap.get(targetConnection));
 	    	privateMessage.setReply();
 	    	privateMessage.setMessageRepliedTo(message.getMessageRepliedTo());
-    		ChatRoom pChatRoom = getChatRoom(message.getSender(), connectionUserMap.get(targetConnection));
+    		ChatRoom pChatRoom = getPrivateChatRoom(message.getSender(), connectionUserMap.get(targetConnection));
     		pChatRoom.addMessageToHistory(privateMessage);
 	        targetConnection.sendTCP(privateMessage);
 	        senderConnection.sendTCP(privateMessage);
@@ -149,7 +150,7 @@ public class ChatServer implements Listener, Runnable{
 	}
 	
 	private void joinPrivateRoom(Connection connSender, String userNameSender, String userNameReciever) {
-		ChatRoom room = getChatRoom(userNameSender, userNameReciever);
+		ChatRoom room = getPrivateChatRoom(userNameSender, userNameReciever);
 		if(room != null) {
 			if(room.userInRoom(userNameSender)) {
 				userRoomMap.put(userNameSender, room);
@@ -348,7 +349,7 @@ public class ChatServer implements Listener, Runnable{
 					String user = editMessage.getUser();
 					String messageText = editMessage.getTxt();
 					if(message.isPrivateMessage()) {
-			    		ChatRoom pChatRoom = getChatRoom(message.getSender(), message.getReciever());
+			    		ChatRoom pChatRoom = getPrivateChatRoom(message.getSender(), message.getReciever());
 						UpdatedChatMessage updatedMessage = new UpdatedChatMessage(message.getMessageId(), user, messageText);
 			    		pChatRoom.editMessage(updatedMessage);
 			    		userConnectionMap.get(message.getSender()).sendTCP(updatedMessage);
@@ -375,8 +376,14 @@ public class ChatServer implements Listener, Runnable{
 				if (object instanceof FetchMessages) {
 					FetchMessages fetchMessages = (FetchMessages)object;
 					ChatMessage message = fetchMessages.getMessage();
-					String roomName = userRoomMap.get(message.getSender()).getRoomName();
-					ChatRoom room = chatRooms.get(roomName);
+					ChatRoom room;
+					if(message.isPrivateMessage()) {
+						room = getPrivateChatRoom(message.getReciever(), message.getSender());
+					}
+					else {
+						String roomName = userRoomMap.get(message.getSender()).getRoomName();
+						room = chatRooms.get(roomName);
+					}
 					LinkedHashSet<ChatMessage> history = room.getMessageHistory();
 					List<ChatMessage> messageList = new ArrayList<>(history);
 					int index = messageList.lastIndexOf(message);
@@ -386,7 +393,7 @@ public class ChatServer implements Listener, Runnable{
 			}
 			
 			public void disconnected(Connection connection) {
-				if(connectionBoolMap.get(connection)) {
+				if(connectionBoolMap.get(connection) != null) {
 					connectionBoolMap.remove(connection);
 				}
 				else {
@@ -427,6 +434,7 @@ public class ChatServer implements Listener, Runnable{
 	private void broadcastChatMessage(Connection exception, ChatMessage message, String chatRoomName) {
         ChatRoom room = chatRooms.get(chatRoomName);
         if(room != null) {
+        	message.setRoomName(chatRoomName);
 		    for (Connection conn : userConnectionMap.values()) {
 		        if (conn.isConnected() && isConnectionInRoom(conn, chatRoomName)) {
 		            conn.sendTCP(message);

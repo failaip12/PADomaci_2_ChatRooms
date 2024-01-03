@@ -119,7 +119,7 @@ public class ChatClientGUI extends Application {
                 MenuItem replyItem = new MenuItem("Reply");
                 replyItem.setOnAction(e -> {
                     ChatMessage selectedMessage = getItem();
-                    if (selectedMessage != null) {
+                    if (selectedMessage != null && selectedMessage.getSender() != null) {
                         replyToMessage(selectedMessage);
                     }
                 });
@@ -138,6 +138,14 @@ public class ChatClientGUI extends Application {
                     String text = item.toString();
                     if (item.isEdited()) {
                         text += " (Ed)";
+                    }
+                    if(item.isPrivateMessage()) {
+                    	if(item.getSender().equals(username)) {
+                    		text = "(PRIVATE) TO:" + text;
+                    	}
+                    	else if(item.getReciever().equals(username)) {
+                    		text = "(PRIVATE) FROM:" + text;
+                    	}
                     }
                     if (item.isReply()) {
                     	setTextFill(Color.GREEN);
