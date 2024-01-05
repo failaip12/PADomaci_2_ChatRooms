@@ -213,9 +213,12 @@ public class ChatServer implements Listener, Runnable{
 				
 				if (object instanceof ChatMessage) {
 					ChatMessage chatMessage = (ChatMessage)object;
-				    String userRoomName = userRoomMap.get(chatMessage.getSender()).getRoomName();
+				    String userRoomName = chatMessage.getRoomName();
 				    String chatMessageText = chatMessage.getTxt();
-					System.out.println(chatMessage.getSender()+":" + chatMessageText);
+				    ChatRoom room1 = chatRooms.get(userRoomName);
+				    if(!room1.userInRoom(chatMessage.getSender())) {
+				    	return;
+				    }
 					if(chatMessage.isReply() && chatMessage.getMessageRepliedTo().isPrivateMessage()) {
 						Connection connSender = userConnectionMap.get(chatMessage.getSender());
 						Connection conn2 = userConnectionMap.get(chatMessage.getMessageRepliedTo().getReciever());
@@ -437,6 +440,10 @@ public class ChatServer implements Listener, Runnable{
         	message.setRoomName(chatRoomName);
 		    for (Connection conn : userConnectionMap.values()) {
 		        if (conn.isConnected() && isConnectionInRoom(conn, chatRoomName)) {
+		        	System.out.println("----------------------");
+		        	System.out.println(connectionUserMap.get(conn));
+		        	System.out.println(chatRoomName);
+		        	System.out.println("----------------------");
 		            conn.sendTCP(message);
 		        }
 		    }
@@ -467,14 +474,6 @@ public class ChatServer implements Listener, Runnable{
 	}
 	
 	private void broadcastUpdatedChatMessage(UpdatedChatMessage message, String chatRoomName) {
-	    for (Connection conn : userConnectionMap.values()) {
-	        if (conn.isConnected() && isConnectionInRoom(conn, chatRoomName)) {
-	            conn.sendTCP(message);
-	        }
-	    }
-	}
-	
-	private void broadcastInfoMessageToRoom(InfoMessage message, String chatRoomName) {
 	    for (Connection conn : userConnectionMap.values()) {
 	        if (conn.isConnected() && isConnectionInRoom(conn, chatRoomName)) {
 	            conn.sendTCP(message);
