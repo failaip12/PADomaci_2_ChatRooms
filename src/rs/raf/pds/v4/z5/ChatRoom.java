@@ -16,6 +16,10 @@ public class ChatRoom {
 	private LinkedHashSet<ChatMessage> messageHistory;
 	private boolean private_chat = false;
 	
+	protected ChatRoom() {
+		
+	}
+	
 	public ChatRoom(String roomName, Set<String> userList, LinkedHashSet<ChatMessage> messageHistory) {
 		this.roomName = roomName;
 		this.messageHistory = messageHistory;
@@ -123,5 +127,10 @@ public class ChatRoom {
 	public String getRoomCreator() {
 		return roomCreator;
 	}
+	
+	@Override
+    public String toString() {
+		return roomName;
+    }
 	
 }

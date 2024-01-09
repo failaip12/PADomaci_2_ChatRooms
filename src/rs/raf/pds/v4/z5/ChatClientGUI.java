@@ -14,10 +14,10 @@ import javafx.stage.Stage;
 import rs.raf.pds.v4.z5.messages.ChatMessage;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class ChatClientGUI extends Application {
     private ChatClient chatClient;
@@ -31,14 +31,13 @@ public class ChatClientGUI extends Application {
     private Scene chatScene;
     public String username;
     private LinkedHashSet<ChatMessage> messages = new LinkedHashSet<ChatMessage>();
-    private Map<String, LinkedHashSet<ChatMessage>> chatRooms = new HashMap<>();
-    private String currentChatRoom;
-    private ListView<String> chatRoomList = new ListView<>();
+    public ChatRoom currentChatRoom;
+    private ListView<ChatRoom> chatRoomList = new ListView<>();
     public static void main(String[] args) {
         launch(args);
     }
 
-    public String getCurrentChatRoom() {
+    public ChatRoom getCurrentChatRoom() {
 		return currentChatRoom;
 	}
 
@@ -183,10 +182,10 @@ public class ChatClientGUI extends Application {
         VBox vBox = new VBox(10);
         vBox.getChildren().addAll(borderPane, inputField);
         addCreateChatRoomButton(borderPane);
-        chatRoomList.getItems().addAll(chatRooms.keySet());
+        chatRoomList.getItems().addAll(chatClient.chatRoomsNameMap.values());
         chatRoomList.setOnMouseClicked(event -> {
             if (event.getButton() == MouseButton.PRIMARY) {
-                String selectedChatRoom = chatRoomList.getSelectionModel().getSelectedItem();
+                ChatRoom selectedChatRoom = chatRoomList.getSelectionModel().getSelectedItem();
                 if (selectedChatRoom != null) {
                 	switchChatRoom(selectedChatRoom);
                 }
@@ -197,13 +196,9 @@ public class ChatClientGUI extends Application {
         chatRoomList.setPrefWidth(120); 
         borderPane.setRight(chatRoomList);
         
-
-        LinkedHashSet<ChatMessage> chatRoomMessages = new LinkedHashSet<>();
-        chatRooms.put("main", chatRoomMessages);
-        currentChatRoom = "main";
-        messages = chatRooms.get(currentChatRoom);
+        currentChatRoom = new ChatRoom(null, null);
+        messages = currentChatRoom.getMessageHistory();
         chatListView.getItems().setAll(messages);
-        
         chatScene = new Scene(vBox, 800, 600);
         primaryStage.setScene(chatScene);
         updateChatRoomList();
@@ -218,7 +213,7 @@ public class ChatClientGUI extends Application {
     }
 
     private void addCreateChatRoomButton(BorderPane borderPane) {
-        Button createChatRoomButton = new Button("Create/Join Chat Room");
+        Button createChatRoomButton = new Button("Create Chat Room");
         createChatRoomButton.setOnAction(e -> createNewChatRoom());
         borderPane.setBottom(createChatRoomButton);
     }
@@ -227,34 +222,42 @@ public class ChatClientGUI extends Application {
         String newChatRoomName = promptForNewChatRoom();
         if (newChatRoomName != null && !newChatRoomName.trim().isEmpty()) {
             createChatRoom(newChatRoomName);
-            updateChatRoomList();
-            switchChatRoom(newChatRoomName);
         }
     }
     
-    private void updateChatRoomList() {
+    public void updateChatRoomList() {
         Scene scene = primaryStage.getScene();
         VBox vBox = (VBox) scene.getRoot();
 
         // Assuming that the BorderPane is the first child of the VBox
         BorderPane borderPane = (BorderPane) vBox.getChildren().get(0);
-        ListView<String> chatRoomList = (ListView<String>) borderPane.getRight();
+        ListView<ChatRoom> chatRoomList = (ListView<ChatRoom>) borderPane.getRight();
 
-        chatRoomList.getItems().setAll(chatRooms.keySet());
+        chatRoomList.getItems().setAll(chatClient.chatRoomsNameMap.values());
+
+		System.out.println(chatClient.chatRoomsNameMap);
     }
-
+    
+    public void addChatRoom(String chatRoomName, Boolean private_room) {
+        ChatRoom room = new ChatRoom(username, chatRoomName);
+        if(private_room) {
+        	room.isPrivate_chat();
+        }
+    }
     
     private void createChatRoom(String chatRoomName) {
-        LinkedHashSet<ChatMessage> chatRoomMessages = new LinkedHashSet<>();
-        chatClient.sendMessage("/create " + chatRoomName, "main");
-        chatRooms.put(chatRoomName, chatRoomMessages);
+        chatClient.sendMessage("/create " + chatRoomName, currentChatRoom.getRoomName());
+        addChatRoom(chatRoomName, false);
     }
-
     
-    private void switchChatRoom(String chatRoomName) {
-        currentChatRoom = chatRoomName;
-        chatClient.sendMessage("/join  " + chatRoomName, "main");
-        displayMessages(currentChatRoom);
+    private void switchChatRoom(ChatRoom chatRoom) {
+        if(chatRoom.isPrivate_chat()) {
+        	chatClient.sendMessage("/join_private_chat  " + chatRoom.getRoomName(), currentChatRoom.getRoomName());
+        }
+        else {
+        	chatClient.sendMessage("/join  " + chatRoom.getRoomName(), currentChatRoom.getRoomName());
+        }
+        displayMessages(chatRoom);
     }
 
     private void jumpToOriginalMessage(ChatMessage originalMessage) {//So close yet so far.
@@ -286,7 +289,7 @@ public class ChatClientGUI extends Application {
     private void sendMessage() {
         String message = inputField.getText();
         if (!message.isEmpty()) {
-            chatClient.sendMessage(message, currentChatRoom);
+            chatClient.sendMessage(message, currentChatRoom.getRoomName());
             inputField.clear();
         }
     }
@@ -308,16 +311,21 @@ public class ChatClientGUI extends Application {
         });
     }
 
-    public void displayMessages(String roomName) {
-        messages = chatClient.getRoomHistory(roomName);
-        if (messages != null && chatListView.getItems() != null) {
-            chatListView.getItems().setAll(messages);
-            chatListView.scrollTo(chatListView.getItems().size() - 1);
-        } else if(messages == null) {
-        	chatListView.getItems().clear();
-        }
-        else if(chatListView.getItems() == null) {
-        	System.out.println("Error: chatListView.getItems() is null");
-        }
+    public void displayMessages(ChatRoom room) {
+    	if(room!=null) {
+	        messages = chatClient.chatRoomsHistory.get(room);
+	        if (messages != null && chatListView.getItems() != null) {
+	            chatListView.getItems().setAll(messages);
+	            chatListView.scrollTo(chatListView.getItems().size() - 1);
+	        } else if(messages == null) {
+	        	chatListView.getItems().clear();
+	        }
+	        else if(chatListView.getItems() == null) {
+	        	System.out.println("Error: chatListView.getItems() is null");
+	        }
+    	}
+    	else {
+    		System.out.println("room is null");
+    	}
     }
 }

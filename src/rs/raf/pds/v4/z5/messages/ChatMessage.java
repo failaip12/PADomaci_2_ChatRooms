@@ -97,13 +97,13 @@ public class ChatMessage{
 	@Override
     public String toString() {
 		if(sender!=null) {
-			if(roomName != null) {
-				return "(" + roomName + ") " + sender.toString() + ": " + txt.toString() + "\n";
+			if(roomName != null && !privateMessage) {
+				return "(" + roomName + ") " + sender + ": " + txt + "\n";
 			}
-			return sender.toString() + ": " + txt.toString() + "\n";
+			return sender + ": " + txt + "\n";
 		}
 		else {
-			return txt.toString() + "\n";
+			return txt + "\n";
 		}
     }
 	

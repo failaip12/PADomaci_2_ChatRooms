@@ -36,13 +36,12 @@ public class ChatServer implements Listener, Runnable{
 	private ConcurrentMap<String, ChatRoom> chatRooms;
 	private ConcurrentMap<String, ChatRoom> privateChatRooms;
 	private ChatRoom mainRoom;
-	private String mainRoomName = "main";
 	
 	public ChatServer(int portNumber) {
-		mainRoom = new ChatRoom("Server: ", mainRoomName);
+		mainRoom = new ChatRoom("Server: ", Constants.MAIN_ROOM_NAME);
 		this.chatRooms = new ConcurrentHashMap<String, ChatRoom>();
 		this.privateChatRooms = new ConcurrentHashMap<String, ChatRoom>();
-		this.chatRooms.put(mainRoomName, mainRoom);
+		this.chatRooms.put(Constants.MAIN_ROOM_NAME, mainRoom);
 		this.server = new Server();
 		
 		this.portNumber = portNumber;
@@ -58,7 +57,7 @@ public class ChatServer implements Listener, Runnable{
 				InfoMessage infoMessageInvited = new InfoMessage("You got invited to the chatRoom " + roomName + " by user " + userNameInvitee);
 				connInvited.sendTCP(infoMessageInvited);
 				
-				room.addNewUser(userNameInvited);
+				room.addNewUser(userNameInvited); // Maybe not add instantly TODO
 				InfoMessage infoMessageSender = new InfoMessage("Successfully invited the user " + userNameInvited + " to the ChatRoom " + roomName);
 				connSender.sendTCP(infoMessageSender);
 			}
@@ -76,10 +75,12 @@ public class ChatServer implements Listener, Runnable{
 	
 	private void createChatRoom(Connection connSender, String roomName) {
 		String user = connectionUserMap.get(connSender);
+		ChatRoom room = new ChatRoom(user, roomName);
 		if(chatRooms.get(roomName) == null) {
-			chatRooms.put(roomName, new ChatRoom(user, roomName));
+			chatRooms.put(roomName, room);
 			InfoMessage infoMessageSender = new InfoMessage("Successfully created chat room " + roomName);
 			connSender.sendTCP(infoMessageSender);
+			connSender.sendTCP(room);
 		}
 		else {
 			InfoMessage infoMessageSender = new InfoMessage("A room with that name already exists");
@@ -113,6 +114,7 @@ public class ChatServer implements Listener, Runnable{
 	    	ChatMessage privateMessage = new ChatMessage(senderUserName, message);
 	    	privateMessage.setPrivateMessage();
 	    	privateMessage.setReciever(targetUserName);
+	    	privateMessage.setRoomName(generateKey(targetUserName, senderUserName));
     		ChatRoom pChatRoom = getPrivateChatRoom(targetUserName, senderUserName);
     		pChatRoom.addMessageToHistory(privateMessage);
 	    	targetConnection.sendTCP(privateMessage);
@@ -174,9 +176,11 @@ public class ChatServer implements Listener, Runnable{
 		if(room != null) {
 			if(room.userInRoom(userName)) {
 				userRoomMap.put(userName, room);
+				ChatRoom roomToSend = room;
+				roomToSend.setMessageHistory(room.lastFiveMessages());
+				connSender.sendTCP(roomToSend);
 				InfoMessage infoMessage = new InfoMessage("Successfully joined the room " + roomName);
 				connSender.sendTCP(infoMessage);
-				connSender.sendTCP(new ChatMessageLinkedHashSet (room.lastFiveMessages()));
 			}
 			else {
 				InfoMessage infoMessageSender = new InfoMessage("You aren't invited to this room!");
@@ -195,8 +199,10 @@ public class ChatServer implements Listener, Runnable{
 				if (object instanceof Login) {
 					Login login = (Login)object;
 					if(newUserLogged(login, connection)) {
-						connection.sendTCP(new InfoMessage("Hello "+login.getUserName()));
-						connection.sendTCP(new ChatMessageLinkedHashSet (mainRoom.lastFiveMessages()));
+						connection.sendTCP(new InfoMessage("Hello " + login.getUserName()));
+						ChatRoom room = mainRoom;
+						room.setMessageHistory(mainRoom.lastFiveMessages());
+						connection.sendTCP(room);
 						try {
 							Thread.sleep(2000);
 						} catch (InterruptedException e) {
@@ -216,7 +222,7 @@ public class ChatServer implements Listener, Runnable{
 				    String userRoomName = chatMessage.getRoomName();
 				    String chatMessageText = chatMessage.getTxt();
 				    ChatRoom room1 = chatRooms.get(userRoomName);
-				    if(!room1.userInRoom(chatMessage.getSender())) {
+				    if(room1 != null && !room1.userInRoom(chatMessage.getSender())) {
 				    	return;
 				    }
 					if(chatMessage.isReply() && chatMessage.getMessageRepliedTo().isPrivateMessage()) {

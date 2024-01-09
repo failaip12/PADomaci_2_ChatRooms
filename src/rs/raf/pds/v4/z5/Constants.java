@@ -8,4 +8,5 @@ public class Constants {
     public static final String JOIN_ROOM_COMMAND = "/join";
     public static final String JOIN_PRIVATE_CHAT_COMMAND = "/join_private_chat";
     public static final String GET_MORE_MESSAGES_COMMAND = "/get_more_messages";
+    public static final String MAIN_ROOM_NAME = "main";
 }
