@@ -145,10 +145,13 @@ public class ChatClientGUI extends Application {
                     }
                     if(item.isPrivateMessage()) {
                     	if(item.getSender().equals(username)) {
-                    		text = "(PRIVATE) TO:" + text;
+                    		text = "(PRIVATE) TO " + item.getReciever() + "\n" + item.getTxt();
+                            if (item.isEdited()) {
+                                text += " (Ed)";
+                            }
                     	}
                     	else if(item.getReciever().equals(username)) {
-                    		text = "(PRIVATE) FROM:" + text;
+                    		text = "(PRIVATE) FROM " + item.getSender() + "\n" + item.getTxt();
                     	}
                     }
                     if (item.isReply()) {
@@ -182,6 +185,33 @@ public class ChatClientGUI extends Application {
         vBox.getChildren().addAll(borderPane, inputField);
         addCreateChatRoomButton(borderPane);
         chatRoomList.getItems().addAll(chatClient.chatRoomsNameMap.values());
+        chatRoomList.setCellFactory(param -> new ListCell<ChatRoom>() {
+            @Override
+            protected void updateItem(ChatRoom item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else if(item.isPrivate_chat()) {
+                    Set<String> userList = item.getUserList();
+                    if (userList.size() == 2) {
+                        Iterator<String> iterator = userList.iterator();
+                        String user1 = iterator.next();
+                        String user2 = iterator.next();
+                        
+                        String otherUser = user1.equals(chatClient.userName) ? user2 : user1;
+                    	setText("Private Chat with : " + otherUser);
+                    }
+                    else {
+                    	setText("UNREACHABLE");
+                    }
+                }
+                else {
+                    // Customize how the room name is displayed here
+                    setText("Room: " + item.getRoomName());
+                }
+            }
+        });
+
         chatRoomList.setOnMouseClicked(event -> {
             if (event.getButton() == MouseButton.PRIMARY) {
                 ChatRoom selectedChatRoom = chatRoomList.getSelectionModel().getSelectedItem();

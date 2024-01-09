@@ -115,10 +115,8 @@ public class ChatServer implements Listener, Runnable{
 	    	privateMessage.setRoomName(generateKey(targetUserName, senderUserName));
     		ChatRoom pChatRoom = getPrivateChatRoom(targetUserName, senderUserName);
     		pChatRoom.addMessageToHistory(privateMessage);
-	    	targetConnection.sendTCP(pChatRoom);
+	    	targetConnection.sendTCP(pChatRoom); //dumb solution ik
 	        exception.sendTCP(pChatRoom);
-	    	targetConnection.sendTCP(privateMessage);
-	        exception.sendTCP(privateMessage);
 	    }
 	    else {
 			InfoMessage infoMessageSender = new InfoMessage("The user doesnt exist/isn't online");
@@ -239,7 +237,7 @@ public class ChatServer implements Listener, Runnable{
 						sendPrivateMessageReply(connSender, conn2, chatMessage);
 					}
 					else if(chatMessageText.startsWith(Constants.INVITE_COMMAND)) {
-				        String[] parts = chatMessageText.split("\\s+", 2);
+				        String[] parts = chatMessageText.split("\\s+", 3);
 				        if (parts.length == 3) {
 				            String roomName = parts[1];
 				            String userName = parts[2].trim();
