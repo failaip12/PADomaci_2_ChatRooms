@@ -95,6 +95,7 @@ public class ChatServer implements Listener, Runnable{
         ChatRoom pRoom = new ChatRoom(user1, key);
         pRoom.addNewUser(user1);
         pRoom.addNewUser(user2);
+        pRoom.setPrivate_chat();
         return privateChatRooms.computeIfAbsent(key, k -> pRoom);
     }
 
@@ -117,6 +118,8 @@ public class ChatServer implements Listener, Runnable{
 	    	privateMessage.setRoomName(generateKey(targetUserName, senderUserName));
     		ChatRoom pChatRoom = getPrivateChatRoom(targetUserName, senderUserName);
     		pChatRoom.addMessageToHistory(privateMessage);
+	    	targetConnection.sendTCP(pChatRoom);
+	        exception.sendTCP(pChatRoom);
 	    	targetConnection.sendTCP(privateMessage);
 	        exception.sendTCP(privateMessage);
 	    }
@@ -132,6 +135,7 @@ public class ChatServer implements Listener, Runnable{
 	    	privateMessage.setReciever(connectionUserMap.get(targetConnection));
 	    	privateMessage.setReply();
 	    	privateMessage.setMessageRepliedTo(message.getMessageRepliedTo());
+	    	privateMessage.setRoomName(generateKey(message.getSender(), connectionUserMap.get(targetConnection)));
     		ChatRoom pChatRoom = getPrivateChatRoom(message.getSender(), connectionUserMap.get(targetConnection));
     		pChatRoom.addMessageToHistory(privateMessage);
 	        targetConnection.sendTCP(privateMessage);

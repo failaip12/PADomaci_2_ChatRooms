@@ -14,10 +14,10 @@ import javafx.stage.Stage;
 import rs.raf.pds.v4.z5.messages.ChatMessage;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.Set;
 
 public class ChatClientGUI extends Application {
     private ChatClient chatClient;
@@ -252,10 +252,22 @@ public class ChatClientGUI extends Application {
     
     private void switchChatRoom(ChatRoom chatRoom) {
         if(chatRoom.isPrivate_chat()) {
-        	chatClient.sendMessage("/join_private_chat  " + chatRoom.getRoomName(), currentChatRoom.getRoomName());
+            Set<String> userList = chatRoom.getUserList();
+            if (userList.size() == 2) {
+                Iterator<String> iterator = userList.iterator();
+                String user1 = iterator.next();
+                String user2 = iterator.next();
+                
+                String otherUser = user1.equals(chatClient.userName) ? user2 : user1;
+            	chatClient.sendMessage("/join_private_chat " + otherUser, currentChatRoom.getRoomName());
+            	System.out.println("/join_private_chat " + otherUser);
+            } else {
+                System.err.println("UNREACHABLE");
+                return; // Add return statement to exit the method
+            }
         }
         else {
-        	chatClient.sendMessage("/join  " + chatRoom.getRoomName(), currentChatRoom.getRoomName());
+        	chatClient.sendMessage("/join " + chatRoom.getRoomName(), currentChatRoom.getRoomName());
         }
         displayMessages(chatRoom);
     }
