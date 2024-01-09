@@ -14,6 +14,7 @@ import com.esotericsoftware.kryonet.Server;
 
 import rs.raf.pds.v4.z5.messages.ChatMessage;
 import rs.raf.pds.v4.z5.messages.ChatMessageLinkedHashSet;
+import rs.raf.pds.v4.z5.messages.DeleteMessage;
 import rs.raf.pds.v4.z5.messages.EditMessage;
 import rs.raf.pds.v4.z5.messages.FetchMessages;
 import rs.raf.pds.v4.z5.messages.InfoMessage;
@@ -159,7 +160,7 @@ public class ChatServer implements Listener, Runnable{
 				userRoomMap.put(userNameSender, room);
 				InfoMessage infoMessage = new InfoMessage("Successfully joined the private room " + userNameReciever);
 				connSender.sendTCP(infoMessage);
-				connSender.sendTCP(new ChatMessageLinkedHashSet (room.getMessageHistory()));
+				connSender.sendTCP(new ChatMessageLinkedHashSet (room.lastFiveMessages()));
 			}
 			else {
 				InfoMessage infoMessageSender = new InfoMessage("You aren't invited to this room!");
@@ -347,23 +348,44 @@ public class ChatServer implements Listener, Runnable{
 					ChatMessage message = editMessage.getMessage();
 					String user = editMessage.getUser();
 					String messageText = editMessage.getTxt();
-					if(message.isPrivateMessage()) {
-			    		ChatRoom pChatRoom = getPrivateChatRoom(message.getSender(), message.getReciever());
-						UpdatedChatMessage updatedMessage = new UpdatedChatMessage(message.getMessageId(), user, messageText);
-			    		pChatRoom.editMessage(updatedMessage);
-			    		userConnectionMap.get(message.getSender()).sendTCP(updatedMessage);
-			    		userConnectionMap.get(message.getReciever()).sendTCP(updatedMessage);
-					}
-					else {
-						ChatRoom room = userRoomMap.get(user);
-						if(user.equals(message.getSender())) {
+					if(user.equals(message.getSender())) {
+						if(message.isPrivateMessage()) {
+				    		ChatRoom pChatRoom = getPrivateChatRoom(message.getSender(), message.getReciever());
 							UpdatedChatMessage updatedMessage = new UpdatedChatMessage(message.getMessageId(), user, messageText);
-							room.editMessage(updatedMessage);
-							broadcastUpdatedChatMessage(updatedMessage, room.getRoomName());
+				    		pChatRoom.editMessage(updatedMessage);
+				    		userConnectionMap.get(message.getSender()).sendTCP(updatedMessage);
+				    		userConnectionMap.get(message.getReciever()).sendTCP(updatedMessage);
 						}
 						else {
-							System.err.println("UNREACHABLE");
+							ChatRoom room = userRoomMap.get(user);
+								UpdatedChatMessage updatedMessage = new UpdatedChatMessage(message.getMessageId(), user, messageText);
+								room.editMessage(updatedMessage);
+								broadcastUpdatedChatMessage(updatedMessage, room.getRoomName());
 						}
+					}
+					else {
+						System.err.println("UNREACHABLE");
+					}
+					return;
+				}
+				if (object instanceof DeleteMessage) {
+					DeleteMessage deleteMessage = (DeleteMessage)object;
+					ChatMessage message = deleteMessage.getMessage();
+					String user = deleteMessage.getUser();
+
+					if(user.equals(message.getSender())) {
+						if(message.isPrivateMessage()) {
+				    		ChatRoom pChatRoom = getPrivateChatRoom(message.getSender(), message.getReciever());
+				    		pChatRoom.deleteMessage(message);
+				    		userConnectionMap.get(message.getSender()).sendTCP(deleteMessage);
+				    		userConnectionMap.get(message.getReciever()).sendTCP(deleteMessage);
+				    	} else {
+							ChatRoom room = userRoomMap.get(user);
+							room.deleteMessage(message);
+							broadcastDeletedMessage(deleteMessage, room.getRoomName());
+						}
+					} else {
+						System.err.println("UNREACHABLE");
 					}
 					return;
 				}
@@ -468,6 +490,14 @@ public class ChatServer implements Listener, Runnable{
 	}
 	
 	private void broadcastUpdatedChatMessage(UpdatedChatMessage message, String chatRoomName) {
+	    for (Connection conn : userConnectionMap.values()) {
+	        if (conn.isConnected() && isConnectionInRoom(conn, chatRoomName)) {
+	            conn.sendTCP(message);
+	        }
+	    }
+	}
+	
+	private void broadcastDeletedMessage(DeleteMessage message, String chatRoomName) {
 	    for (Connection conn : userConnectionMap.values()) {
 	        if (conn.isConnected() && isConnectionInRoom(conn, chatRoomName)) {
 	            conn.sendTCP(message);

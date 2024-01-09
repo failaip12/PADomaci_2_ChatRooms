@@ -20,6 +20,7 @@ public class KryoUtil {
 
 		kryo.register(ChatMessage.class);
 		kryo.register(ChatMessageLinkedHashSet.class);
+		kryo.register(DeleteMessage.class);
 		kryo.register(EditMessage.class);
 		kryo.register(FetchMessages.class);
 		kryo.register(InfoMessage.class);

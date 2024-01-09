@@ -17,6 +17,7 @@ import javafx.application.Platform;
 
 import rs.raf.pds.v4.z5.messages.ChatMessage;
 import rs.raf.pds.v4.z5.messages.ChatMessageLinkedHashSet;
+import rs.raf.pds.v4.z5.messages.DeleteMessage;
 import rs.raf.pds.v4.z5.messages.EditMessage;
 import rs.raf.pds.v4.z5.messages.FetchMessages;
 import rs.raf.pds.v4.z5.messages.InfoMessage;
@@ -119,6 +120,15 @@ public class ChatClient implements Runnable{
 					return;
 				}
 				
+				if (object instanceof DeleteMessage) {
+					DeleteMessage message = (DeleteMessage)object;
+					deleteMessage(message);
+					Platform.runLater(() -> {
+						gui.displayMessages(gui.getCurrentChatRoom());
+					});
+					return;
+				}
+				
 				if (object instanceof ChatMessageLinkedHashSet) {
 					ChatMessageLinkedHashSet messageList = (ChatMessageLinkedHashSet)object;
 					if(messageList.getMessageList().size() > 0) {
@@ -155,6 +165,14 @@ public class ChatClient implements Runnable{
                 }
             }
         }
+	}
+	
+	private void deleteMessage(DeleteMessage chatMessage) {
+		ChatMessage message = chatMessage.getMessage();
+		ChatRoom room = chatRoomsNameMap.get(message.getRoomName());
+        LinkedHashSet<ChatMessage> chatRoomMessages = chatRoomsHistory.computeIfAbsent(room, k -> new LinkedHashSet<>());
+        chatRoomMessages.remove(message);
+		room.deleteMessage(message);
 	}
 	
     private void showChatMessage(ChatMessage chatMessage) {
@@ -235,9 +253,15 @@ public class ChatClient implements Runnable{
 	    }
 	}
 	
-	public void editMessage(ChatMessage message, String editedmessage) {
+	public void sendEditMessage(ChatMessage message, String editedmessage) {
 	    if (client.isConnected()) {
 	        client.sendTCP(new EditMessage(message, userName, editedmessage));
+	    }
+	}
+	
+	public void sendDeleteMessage(ChatMessage message, String editedmessage) {
+	    if (client.isConnected()) {
+	        client.sendTCP(new DeleteMessage(message, userName));
 	    }
 	}
 	

@@ -127,8 +127,16 @@ public class ChatClientGUI extends Application {
                         replyToMessage(selectedMessage);
                     }
                 });
-
-                contextMenu.getItems().addAll(editItem, replyItem);
+                
+                MenuItem deleteItem = new MenuItem("Delete");
+                deleteItem.setOnAction(e -> {
+                    ChatMessage selectedMessage = getItem();
+                    if (selectedMessage != null && username.equals(selectedMessage.getSender())) {
+                        deleteMessage(selectedMessage);
+                    }
+                });
+                
+                contextMenu.getItems().addAll(editItem, replyItem, deleteItem);
             }
 
             @Override
@@ -258,9 +266,8 @@ public class ChatClientGUI extends Application {
         Scene scene = primaryStage.getScene();
         VBox vBox = (VBox) scene.getRoot();
 
-        // Assuming that the BorderPane is the first child of the VBox
         BorderPane borderPane = (BorderPane) vBox.getChildren().get(0);
-        ListView<ChatRoom> chatRoomList = (ListView<ChatRoom>) borderPane.getRight();
+        ListView<ChatRoom> chatRoomList = (ListView<ChatRoom>) borderPane.getRight(); //This should be safe anyway
 
         chatRoomList.getItems().setAll(chatClient.chatRoomsNameMap.values());
     }
@@ -318,7 +325,7 @@ public class ChatClientGUI extends Application {
         dialog.setHeaderText("Edit your message:");
         Optional<String> result = dialog.showAndWait();
         result.ifPresent(editedText -> {
-        	chatClient.editMessage(selectedMessage, editedText);
+        	chatClient.sendEditMessage(selectedMessage, editedText);
             selectedMessage.setTxt(editedText);
             displayMessages(getCurrentChatRoom());
         });
@@ -348,7 +355,19 @@ public class ChatClientGUI extends Application {
             chatClient.sendReply(message);
         });
     }
+    
+    private void deleteMessage(ChatMessage selectedMessage) {
+        Alert confirmationDialog = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmationDialog.setTitle("Delete Message");
+        confirmationDialog.setHeaderText("Are you sure you want to delete this message?");
+        confirmationDialog.setContentText(selectedMessage.getTxt());
 
+        Optional<ButtonType> result = confirmationDialog.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+        	chatClient.sendDeleteMessage(selectedMessage, username);
+        }
+    }
+    
     public void displayMessages(ChatRoom room) {
     	if(room!=null) {
 	        messages = chatClient.chatRoomsHistory.get(room);

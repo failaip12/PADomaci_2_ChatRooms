@@ -1,5 +1,6 @@
 package rs.raf.pds.v4.z5.messages;
 
+import java.util.Objects;
 import java.util.UUID;
 
 
@@ -119,4 +120,9 @@ public class ChatMessage{
 	    ChatMessage message = (ChatMessage) obj;
 		return this.getMessageId().equals(message.getMessageId());
 	}
+	@Override
+	public int hashCode() {
+	    return Objects.hash(messageId);
+	}
+
 }

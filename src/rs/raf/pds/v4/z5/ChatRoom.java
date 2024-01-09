@@ -62,6 +62,15 @@ public class ChatRoom {
 		}
 	}
 	
+	public void deleteMessage(ChatMessage deletedMessage) {
+		for(ChatMessage message:messageHistory) {
+			if(message.isReply() && message.getMessageRepliedTo().getMessageId().equals(deletedMessage.getMessageId())) {
+				message.getMessageRepliedTo().setTxt("Original message was deleted");
+			}
+		}
+		messageHistory.remove(deletedMessage);
+	}
+	
 	public ChatMessage getMessageFromUUID(UUID idMessage) {
 		for(ChatMessage message:messageHistory) {
 			if(message.getMessageId().equals(idMessage)) {
