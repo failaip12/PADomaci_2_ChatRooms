@@ -16,6 +16,10 @@ public class ChatRoom {
 	private LinkedHashSet<ChatMessage> messageHistory;
 	private boolean private_chat = false;
 	
+	protected ChatRoom() {
+		
+	}
+	
 	public ChatRoom(String roomName, Set<String> userList, LinkedHashSet<ChatMessage> messageHistory) {
 		this.roomName = roomName;
 		this.messageHistory = messageHistory;
@@ -77,17 +81,12 @@ public class ChatRoom {
 
 	    LinkedHashSet<ChatMessage> result = new LinkedHashSet<>();
 	    Iterator<ChatMessage> iterator = messageHistory.iterator();
-
-	    // Skip elements until the startIndex
 	    for (int i = 0; i < startIndex && iterator.hasNext(); i++) {
 	        iterator.next();
 	    }
-
-	    // Add elements to the result within the specified range
 	    for (int i = startIndex; i < totalMessages && i < startIndex + limit && iterator.hasNext(); i++) {
 	        result.add(iterator.next());
 	    }
-
 	    return result;
 	}
 
@@ -123,5 +122,10 @@ public class ChatRoom {
 	public String getRoomCreator() {
 		return roomCreator;
 	}
+	
+	@Override
+    public String toString() {
+		return roomName;
+    }
 	
 }

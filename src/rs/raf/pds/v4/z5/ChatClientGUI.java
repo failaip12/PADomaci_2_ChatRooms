@@ -14,8 +14,10 @@ import javafx.stage.Stage;
 import rs.raf.pds.v4.z5.messages.ChatMessage;
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Optional;
+import java.util.Set;
 
 public class ChatClientGUI extends Application {
     private ChatClient chatClient;
@@ -29,12 +31,17 @@ public class ChatClientGUI extends Application {
     private Scene chatScene;
     public String username;
     private LinkedHashSet<ChatMessage> messages = new LinkedHashSet<ChatMessage>();
-
+    public ChatRoom currentChatRoom;
+    private ListView<ChatRoom> chatRoomList = new ListView<>();
     public static void main(String[] args) {
         launch(args);
     }
 
-    @Override
+    public ChatRoom getCurrentChatRoom() {
+		return currentChatRoom;
+	}
+
+	@Override
     public void start(Stage primaryStage) {
         this.primaryStage = primaryStage;
         primaryStage.setTitle("Chat Client");
@@ -94,8 +101,6 @@ public class ChatClientGUI extends Application {
                 e.printStackTrace();
             }
             switchToChatWindow();
-            // Start a separate thread to listen for incoming messages and update the GUI
-
         }
     }
 
@@ -106,7 +111,6 @@ public class ChatClientGUI extends Application {
         
         chatListView.setCellFactory(param -> new ListCell<ChatMessage>() {
             private final ContextMenu contextMenu = new ContextMenu();
-
             {
                 MenuItem editItem = new MenuItem("Edit");
                 editItem.setOnAction(e -> {
@@ -141,10 +145,13 @@ public class ChatClientGUI extends Application {
                     }
                     if(item.isPrivateMessage()) {
                     	if(item.getSender().equals(username)) {
-                    		text = "(PRIVATE) TO:" + text;
+                    		text = "(PRIVATE) TO " + item.getReciever() + "\n" + item.getTxt();
+                            if (item.isEdited()) {
+                                text += " (Ed)";
+                            }
                     	}
                     	else if(item.getReciever().equals(username)) {
-                    		text = "(PRIVATE) FROM:" + text;
+                    		text = "(PRIVATE) FROM " + item.getSender() + "\n" + item.getTxt();
                     	}
                     }
                     if (item.isReply()) {
@@ -166,21 +173,131 @@ public class ChatClientGUI extends Application {
 
         chatListView.setOnMouseClicked(event -> {
             if (event.getButton() == MouseButton.SECONDARY) {
-                event.consume(); // Consume the event to prevent it from interfering with cell selection
+                event.consume();
             }
         });
 
         borderPane.setCenter(chatListView);
-
+        
         inputField = new TextField();
         inputField.setOnAction(e -> sendMessage());
         VBox vBox = new VBox(10);
         vBox.getChildren().addAll(borderPane, inputField);
+        addCreateChatRoomButton(borderPane);
+        chatRoomList.getItems().addAll(chatClient.chatRoomsNameMap.values());
+        chatRoomList.setCellFactory(param -> new ListCell<ChatRoom>() {
+            @Override
+            protected void updateItem(ChatRoom item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                } else if(item.isPrivate_chat()) {
+                    Set<String> userList = item.getUserList();
+                    if (userList.size() == 2) {
+                        Iterator<String> iterator = userList.iterator();
+                        String user1 = iterator.next();
+                        String user2 = iterator.next();
+                        
+                        String otherUser = user1.equals(chatClient.userName) ? user2 : user1;
+                    	setText("Private Chat with : " + otherUser);
+                    }
+                    else {
+                    	setText("UNREACHABLE");
+                    }
+                }
+                else {
+                    // Customize how the room name is displayed here
+                    setText("Room: " + item.getRoomName());
+                }
+            }
+        });
 
-        chatScene = new Scene(vBox, 400, 300);
+        chatRoomList.setOnMouseClicked(event -> {
+            if (event.getButton() == MouseButton.PRIMARY) {
+                ChatRoom selectedChatRoom = chatRoomList.getSelectionModel().getSelectedItem();
+                if (selectedChatRoom != null) {
+                	switchChatRoom(selectedChatRoom);
+                }
+            }
+        });
+        
+        
+        chatRoomList.setPrefWidth(120); 
+        borderPane.setRight(chatRoomList);
+        
+        currentChatRoom = new ChatRoom(null, null);
+        messages = currentChatRoom.getMessageHistory();
+        chatListView.getItems().setAll(messages);
+        chatScene = new Scene(vBox, 800, 600);
         primaryStage.setScene(chatScene);
+        updateChatRoomList();
     }
     
+    private String promptForNewChatRoom() {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Create New Chat Room");
+        dialog.setHeaderText("Enter the name for the new chat room:");
+        Optional<String> result = dialog.showAndWait();
+        return result.orElse(null);
+    }
+
+    private void addCreateChatRoomButton(BorderPane borderPane) {
+        Button createChatRoomButton = new Button("Create Chat Room");
+        createChatRoomButton.setOnAction(e -> createNewChatRoom());
+        borderPane.setBottom(createChatRoomButton);
+    }
+    
+    private void createNewChatRoom() {
+        String newChatRoomName = promptForNewChatRoom();
+        if (newChatRoomName != null && !newChatRoomName.trim().isEmpty()) {
+            createChatRoom(newChatRoomName);
+        }
+    }
+    
+    public void updateChatRoomList() {
+        Scene scene = primaryStage.getScene();
+        VBox vBox = (VBox) scene.getRoot();
+
+        // Assuming that the BorderPane is the first child of the VBox
+        BorderPane borderPane = (BorderPane) vBox.getChildren().get(0);
+        ListView<ChatRoom> chatRoomList = (ListView<ChatRoom>) borderPane.getRight();
+
+        chatRoomList.getItems().setAll(chatClient.chatRoomsNameMap.values());
+    }
+    
+    public void addChatRoom(String chatRoomName, Boolean private_room) {
+        ChatRoom room = new ChatRoom(username, chatRoomName);
+        if(private_room) {
+        	room.isPrivate_chat();
+        }
+    }
+    
+    private void createChatRoom(String chatRoomName) {
+        chatClient.sendMessage("/create " + chatRoomName, currentChatRoom.getRoomName());
+        addChatRoom(chatRoomName, false);
+    }
+    
+    private void switchChatRoom(ChatRoom chatRoom) {
+        if(chatRoom.isPrivate_chat()) {
+            Set<String> userList = chatRoom.getUserList();
+            if (userList.size() == 2) {
+                Iterator<String> iterator = userList.iterator();
+                String user1 = iterator.next();
+                String user2 = iterator.next();
+                
+                String otherUser = user1.equals(chatClient.userName) ? user2 : user1;
+            	chatClient.sendMessage("/join_private_chat " + otherUser, currentChatRoom.getRoomName());
+            } else {
+                System.err.println("UNREACHABLE");
+                return;
+            }
+        }
+        else {
+        	chatClient.sendMessage("/join " + chatRoom.getRoomName(), currentChatRoom.getRoomName());
+        }
+        displayMessages(chatRoom);
+    }
+
     private void jumpToOriginalMessage(ChatMessage originalMessage) {//So close yet so far.
     	ObservableList<ChatMessage> items = chatListView.getItems();
     	int index = -1;
@@ -203,14 +320,14 @@ public class ChatClientGUI extends Application {
         result.ifPresent(editedText -> {
         	chatClient.editMessage(selectedMessage, editedText);
             selectedMessage.setTxt(editedText);
-            displayMessages();
+            displayMessages(getCurrentChatRoom());
         });
     }
 
     private void sendMessage() {
         String message = inputField.getText();
         if (!message.isEmpty()) {
-            chatClient.sendMessage(message);
+            chatClient.sendMessage(message, currentChatRoom.getRoomName());
             inputField.clear();
         }
     }
@@ -224,16 +341,29 @@ public class ChatClientGUI extends Application {
             ChatMessage message = new ChatMessage(username, replyText);
             message.setReply();
             message.setMessageRepliedTo(selectedMessage);
-        	if(selectedMessage.isPrivateMessage()) {
+        	if(selectedMessage.isPrivateMessage()) { //TODO: This should probably be done on server side.
         		message.setPrivateMessage();
         	}
+        	message.setRoomName(selectedMessage.getRoomName());
             chatClient.sendReply(message);
         });
     }
 
-    public void displayMessages() {
-        messages = chatClient.getChatHistory();
-        chatListView.getItems().setAll(messages);
-        chatListView.scrollTo(chatListView.getItems().size() - 1);
+    public void displayMessages(ChatRoom room) {
+    	if(room!=null) {
+	        messages = chatClient.chatRoomsHistory.get(room);
+	        if (messages != null && chatListView.getItems() != null) {
+	            chatListView.getItems().setAll(messages);
+	            chatListView.scrollTo(chatListView.getItems().size() - 1);
+	        } else if(messages == null) {
+	        	chatListView.getItems().clear();
+	        }
+	        else if(chatListView.getItems() == null) {
+	        	System.out.println("Error: chatListView.getItems() is null");
+	        }
+    	}
+    	else {
+    		System.out.println("room is null");
+    	}
     }
 }
