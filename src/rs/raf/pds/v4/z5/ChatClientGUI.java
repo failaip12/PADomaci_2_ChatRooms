@@ -113,6 +113,9 @@ public class ChatClientGUI extends Application {
             private final ContextMenu contextMenu = new ContextMenu();
             {
                 MenuItem editItem = new MenuItem("Edit");
+                MenuItem deleteItem = new MenuItem("Delete");
+                MenuItem replyItem = new MenuItem("Reply");
+
                 editItem.setOnAction(e -> {
                     ChatMessage selectedMessage = getItem();
                     if (selectedMessage != null && username.equals(selectedMessage.getSender())) {
@@ -120,7 +123,13 @@ public class ChatClientGUI extends Application {
                     }
                 });
 
-                MenuItem replyItem = new MenuItem("Reply");
+                deleteItem.setOnAction(e -> {
+                    ChatMessage selectedMessage = getItem();
+                    if (selectedMessage != null && username.equals(selectedMessage.getSender())) {
+                        deleteMessage(selectedMessage);
+                    }
+                });
+
                 replyItem.setOnAction(e -> {
                     ChatMessage selectedMessage = getItem();
                     if (selectedMessage != null && selectedMessage.getSender() != null) {
@@ -128,15 +137,14 @@ public class ChatClientGUI extends Application {
                     }
                 });
                 
-                MenuItem deleteItem = new MenuItem("Delete");
-                deleteItem.setOnAction(e -> {
-                    ChatMessage selectedMessage = getItem();
-                    if (selectedMessage != null && username.equals(selectedMessage.getSender())) {
-                        deleteMessage(selectedMessage);
+                itemProperty().addListener((obs, oldItem, newItem) -> {
+                    contextMenu.getItems().clear(); // Clear all existing items
+                    if (newItem != null && username.equals(newItem.getSender())) {
+                        contextMenu.getItems().addAll(editItem, deleteItem);
                     }
+                    contextMenu.getItems().add(replyItem);
                 });
-                
-                contextMenu.getItems().addAll(editItem, replyItem, deleteItem);
+
             }
 
             @Override
