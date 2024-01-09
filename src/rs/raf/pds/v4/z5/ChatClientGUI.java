@@ -111,7 +111,6 @@ public class ChatClientGUI extends Application {
         
         chatListView.setCellFactory(param -> new ListCell<ChatMessage>() {
             private final ContextMenu contextMenu = new ContextMenu();
-
             {
                 MenuItem editItem = new MenuItem("Edit");
                 editItem.setOnAction(e -> {
@@ -234,8 +233,6 @@ public class ChatClientGUI extends Application {
         ListView<ChatRoom> chatRoomList = (ListView<ChatRoom>) borderPane.getRight();
 
         chatRoomList.getItems().setAll(chatClient.chatRoomsNameMap.values());
-
-		System.out.println(chatClient.chatRoomsNameMap);
     }
     
     public void addChatRoom(String chatRoomName, Boolean private_room) {
@@ -260,10 +257,9 @@ public class ChatClientGUI extends Application {
                 
                 String otherUser = user1.equals(chatClient.userName) ? user2 : user1;
             	chatClient.sendMessage("/join_private_chat " + otherUser, currentChatRoom.getRoomName());
-            	System.out.println("/join_private_chat " + otherUser);
             } else {
                 System.err.println("UNREACHABLE");
-                return; // Add return statement to exit the method
+                return;
             }
         }
         else {

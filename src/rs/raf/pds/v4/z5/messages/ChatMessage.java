@@ -16,7 +16,7 @@ public class ChatMessage{
 	private ChatMessage messageRepliedTo = null;
 
 
-	public ChatMessage() {
+	protected ChatMessage() {
 		
 	}
 	

@@ -7,7 +7,6 @@ import rs.raf.pds.v4.z5.ChatRoom;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.UUID;
 
 public class KryoUtil {
@@ -16,7 +15,6 @@ public class KryoUtil {
 		kryo.register(String[].class);
 		kryo.register(HashSet.class);
 		kryo.register(LinkedHashSet.class);
-		kryo.register(List.class); //not needed?
 		kryo.register(ArrayList.class);
 		kryo.register(UUID.class);
 

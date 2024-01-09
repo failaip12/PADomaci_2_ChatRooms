@@ -81,17 +81,12 @@ public class ChatRoom {
 
 	    LinkedHashSet<ChatMessage> result = new LinkedHashSet<>();
 	    Iterator<ChatMessage> iterator = messageHistory.iterator();
-
-	    // Skip elements until the startIndex
 	    for (int i = 0; i < startIndex && iterator.hasNext(); i++) {
 	        iterator.next();
 	    }
-
-	    // Add elements to the result within the specified range
 	    for (int i = startIndex; i < totalMessages && i < startIndex + limit && iterator.hasNext(); i++) {
 	        result.add(iterator.next());
 	    }
-
 	    return result;
 	}
 

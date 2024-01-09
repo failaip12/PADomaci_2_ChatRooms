@@ -50,7 +50,6 @@ public class ChatClient implements Runnable{
 		this.userName = userName;
 		this.gui = gui;
 		this.chatRoomsHistory = new HashMap<ChatRoom, LinkedHashSet<ChatMessage>>();
-		//this.chatRoomsNameMap.put(Constants.MAIN_ROOM_NAME, new ChatRoom());
 		KryoUtil.registerKryoClasses(client.getKryo());
 		registerListener();
 	}
@@ -126,6 +125,7 @@ public class ChatClient implements Runnable{
 						ChatMessage message = messageList.getMessageList().stream().findAny().get();
 						ChatRoom room = chatRoomsNameMap.get(message.getRoomName());
 						chatRoomsHistory.put(room, messageList.getMessageList());
+						room.setMessageHistory(messageList.getMessageList());
 						Platform.runLater(() -> {
 							gui.updateChatRoomList();
 							gui.currentChatRoom = room;
@@ -165,25 +165,21 @@ public class ChatClient implements Runnable{
         if(chatMessage.isPrivateMessage()) {
         	gui.addChatRoom(chatRoomName, true);
         }
-        System.out.println(chatMessage.getSender() + ":" + chatMessage.getTxt());
-        System.out.println("chatMessage.getRoomName()" + chatMessage.getRoomName());
     }
 	
     private void showMessage(String txt) {
         ChatRoom room = gui.getCurrentChatRoom();
         LinkedHashSet<ChatMessage> chatRoomMessages = chatRoomsHistory.computeIfAbsent(room, k -> new LinkedHashSet<>());
         chatRoomMessages.add(new ChatMessage(null, txt));
-        System.out.println(txt);
     }
+    
 	private void showOnlineUsers(String[] users) {
         ChatRoom room = gui.getCurrentChatRoom();
         LinkedHashSet<ChatMessage> chatRoomMessages = chatRoomsHistory.computeIfAbsent(room, k -> new LinkedHashSet<>());
         chatRoomMessages.add(new ChatMessage(null, room.getRoomName() + ":"));
         for (int i = 0; i < users.length; i++) {
             String user = users[i];
-            System.out.print(user);
             chatRoomMessages.add(new ChatMessage(null, user));
-            System.out.printf((i == users.length - 1 ? "\n" : ", "));
             chatRoomMessages.add(new ChatMessage(null, (i == users.length - 1 ? "\n" : ", ")));
         }
 	}
@@ -209,7 +205,7 @@ public class ChatClient implements Runnable{
 	        try {
 	            client.connect(1000, hostName, portNumber);
 	            while (running) {
-	                client.update(0); // Handle communication in a separate thread
+	                client.update(0);
 	            }
 	        } catch (IOException e) {
 	            e.printStackTrace();
