@@ -3,9 +3,6 @@ package rs.raf.pds.v4.z5;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -41,7 +38,6 @@ public class ChatClient implements Runnable{
 	final int portNumber;
 	final String userName;
 	
-	public Map<ChatRoom, LinkedHashSet<ChatMessage>> chatRoomsHistory;
 	public ConcurrentMap<String, ChatRoom> chatRoomsNameMap = new ConcurrentHashMap<>();
 	
 	public ChatClient(ChatClientGUI gui, String hostName, int portNumber, String userName) {
@@ -50,18 +46,9 @@ public class ChatClient implements Runnable{
 		this.portNumber = portNumber;
 		this.userName = userName;
 		this.gui = gui;
-		this.chatRoomsHistory = new HashMap<ChatRoom, LinkedHashSet<ChatMessage>>();
 		KryoUtil.registerKryoClasses(client.getKryo());
 		registerListener();
 	}
-    
-    public Map<ChatRoom, LinkedHashSet<ChatMessage>> getChatRoomsHistory() {
-        return chatRoomsHistory;
-    }
-    
-    public LinkedHashSet<ChatMessage> getRoomHistory(String roomName) {
-    	return chatRoomsHistory.get(chatRoomsNameMap.get(roomName));
-    }
     
 	private void registerListener() {
 		client.addListener(new Listener() {
@@ -92,7 +79,6 @@ public class ChatClient implements Runnable{
 				if (object instanceof ChatRoom) {
 					ChatRoom room = (ChatRoom)object;
 					chatRoomsNameMap.put(room.getRoomName(), room);
-					chatRoomsHistory.put(room, room.getMessageHistory());
 					Platform.runLater(() -> {
 						gui.updateChatRoomList();
 						gui.currentChatRoom = room;
@@ -134,7 +120,6 @@ public class ChatClient implements Runnable{
 					if(messageList.getMessageList().size() > 0) {
 						ChatMessage message = messageList.getMessageList().stream().findAny().get();
 						ChatRoom room = chatRoomsNameMap.get(message.getRoomName());
-						chatRoomsHistory.put(room, messageList.getMessageList());
 						room.setMessageHistory(messageList.getMessageList());
 						Platform.runLater(() -> {
 							gui.updateChatRoomList();
@@ -153,33 +138,21 @@ public class ChatClient implements Runnable{
 	}
 	
 	private void updateChatMessage(UpdatedChatMessage chatMessage) {
-        for (Map.Entry<ChatRoom, LinkedHashSet<ChatMessage>> entry : chatRoomsHistory.entrySet()) {
-            LinkedHashSet<ChatMessage> chatRoomMessages = entry.getValue();
-            for (ChatMessage message : chatRoomMessages) {
-                if (message.getMessageId().equals(chatMessage.getMessageId())) {
-                    message.setTxt(chatMessage.getTxt());
-                    message.setEdited();
-                }
-                if (message.isReply() && message.getMessageRepliedTo().getMessageId().equals(chatMessage.getMessageId())) {
-                    message.getMessageRepliedTo().setTxt(chatMessage.getTxt());
-                }
-            }
-        }
+		ChatRoom room = chatRoomsNameMap.get(chatMessage.getRoomName());
+		room.editMessage(chatMessage);
 	}
+	
 	
 	private void deleteMessage(DeleteMessage chatMessage) {
 		ChatMessage message = chatMessage.getMessage();
 		ChatRoom room = chatRoomsNameMap.get(message.getRoomName());
-        LinkedHashSet<ChatMessage> chatRoomMessages = chatRoomsHistory.computeIfAbsent(room, k -> new LinkedHashSet<>());
-        chatRoomMessages.remove(message);
 		room.deleteMessage(message);
 	}
 	
     private void showChatMessage(ChatMessage chatMessage) {
         String chatRoomName = chatMessage.getRoomName();
         ChatRoom room = chatRoomsNameMap.get(chatRoomName);
-        LinkedHashSet<ChatMessage> chatRoomMessages = chatRoomsHistory.computeIfAbsent(room, k -> new LinkedHashSet<>());
-        chatRoomMessages.add(chatMessage);
+        room.addMessageToHistory(chatMessage);
         if(chatMessage.isPrivateMessage()) {
         	gui.addChatRoom(chatRoomName, true);
         }
@@ -187,18 +160,16 @@ public class ChatClient implements Runnable{
 	
     private void showMessage(String txt) {
         ChatRoom room = gui.getCurrentChatRoom();
-        LinkedHashSet<ChatMessage> chatRoomMessages = chatRoomsHistory.computeIfAbsent(room, k -> new LinkedHashSet<>());
-        chatRoomMessages.add(new ChatMessage(null, txt));
+        room.addMessageToHistory(new ChatMessage(null, txt));
     }
     
 	private void showOnlineUsers(String[] users) {
         ChatRoom room = gui.getCurrentChatRoom();
-        LinkedHashSet<ChatMessage> chatRoomMessages = chatRoomsHistory.computeIfAbsent(room, k -> new LinkedHashSet<>());
-        chatRoomMessages.add(new ChatMessage(null, room.getRoomName() + ":"));
+        room.addMessageToHistory(new ChatMessage(null, room.getRoomName() + ":"));
         for (int i = 0; i < users.length; i++) {
             String user = users[i];
-            chatRoomMessages.add(new ChatMessage(null, user));
-            chatRoomMessages.add(new ChatMessage(null, (i == users.length - 1 ? "\n" : ", ")));
+            room.addMessageToHistory(new ChatMessage(null, user));
+            room.addMessageToHistory(new ChatMessage(null, (i == users.length - 1 ? "\n" : ", ")));
         }
 	}
 	public void start() throws IOException {

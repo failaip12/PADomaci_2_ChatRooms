@@ -7,6 +7,15 @@ public class UpdatedChatMessage {
 	private String messageId; 
     private String user;
     private String txt;
+    private String roomName = null;
+    
+	public String getRoomName() {
+		return roomName;
+	}
+
+	public void setRoomName(String roomName) {
+		this.roomName = roomName;
+	}
 
 	protected UpdatedChatMessage() {
 		

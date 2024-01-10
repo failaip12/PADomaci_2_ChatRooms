@@ -378,7 +378,7 @@ public class ChatClientGUI extends Application {
     
     public void displayMessages(ChatRoom room) {
     	if(room!=null) {
-	        messages = chatClient.chatRoomsHistory.get(room);
+	        messages = room.getMessageHistory();
 	        if (messages != null && chatListView.getItems() != null) {
 	            chatListView.getItems().setAll(messages);
 	            chatListView.scrollTo(chatListView.getItems().size() - 1);

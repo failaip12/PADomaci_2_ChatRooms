@@ -203,10 +203,28 @@ public class ChatServer implements Listener, Runnable{
 				if (object instanceof Login) {
 					Login login = (Login)object;
 					if(newUserLogged(login, connection)) {
+						for(ChatRoom room:chatRooms.values()) {
+							if(room.getRoomCreator().equals(login.getUserName())) {
+								ChatRoom roomCopy = new ChatRoom(room.getRoomName(), room.getUserList(), room.lastFiveMessages());
+								if(mainRoom.isPrivate_chat()) {
+									roomCopy.setPrivate_chat();
+								}
+								connection.sendTCP(roomCopy);
+							}
+						}
+						
+						for(ChatRoom room:privateChatRooms.values()) {
+							if(room.getUserList().contains(login.getUserName())) {
+								ChatRoom roomCopy = new ChatRoom(room.getRoomName(), room.getUserList(), room.lastFiveMessages());
+								roomCopy.setPrivate_chat();
+								connection.sendTCP(roomCopy);
+							}
+						}
+						
+						ChatRoom mainRoomCopy = new ChatRoom(mainRoom.getRoomName(), mainRoom.getUserList(), mainRoom.lastFiveMessages());
+						connection.sendTCP(mainRoomCopy);
+						
 						connection.sendTCP(new InfoMessage("Hello " + login.getUserName()));
-						ChatRoom room = mainRoom;
-						room.setMessageHistory(mainRoom.lastFiveMessages());
-						connection.sendTCP(room);
 						try {
 							Thread.sleep(2000);
 						} catch (InterruptedException e) {
@@ -352,6 +370,7 @@ public class ChatServer implements Listener, Runnable{
 						if(message.isPrivateMessage()) {
 				    		ChatRoom pChatRoom = getPrivateChatRoom(message.getSender(), message.getReciever());
 							UpdatedChatMessage updatedMessage = new UpdatedChatMessage(message.getMessageId(), user, messageText);
+							updatedMessage.setRoomName(message.getRoomName());
 				    		pChatRoom.editMessage(updatedMessage);
 				    		userConnectionMap.get(message.getSender()).sendTCP(updatedMessage);
 				    		userConnectionMap.get(message.getReciever()).sendTCP(updatedMessage);
@@ -359,6 +378,7 @@ public class ChatServer implements Listener, Runnable{
 						else {
 							ChatRoom room = userRoomMap.get(user);
 								UpdatedChatMessage updatedMessage = new UpdatedChatMessage(message.getMessageId(), user, messageText);
+								updatedMessage.setRoomName(message.getRoomName());
 								room.editMessage(updatedMessage);
 								broadcastUpdatedChatMessage(updatedMessage, room.getRoomName());
 						}
