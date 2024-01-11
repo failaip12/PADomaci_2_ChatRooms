@@ -153,9 +153,6 @@ public class ChatClient implements Runnable{
         String chatRoomName = chatMessage.getRoomName();
         ChatRoom room = chatRoomsNameMap.get(chatRoomName);
         room.addMessageToHistory(chatMessage);
-        if(chatMessage.isPrivateMessage()) {
-        	gui.addChatRoom(chatRoomName, true);
-        }
     }
 	
     private void showMessage(String txt) {

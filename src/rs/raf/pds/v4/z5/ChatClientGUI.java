@@ -138,7 +138,7 @@ public class ChatClientGUI extends Application {
                 });
                 
                 itemProperty().addListener((obs, oldItem, newItem) -> {
-                    contextMenu.getItems().clear(); // Clear all existing items
+                    contextMenu.getItems().clear();
                     if (newItem != null && username.equals(newItem.getSender())) {
                         contextMenu.getItems().addAll(editItem, deleteItem);
                     }
@@ -222,7 +222,6 @@ public class ChatClientGUI extends Application {
                     }
                 }
                 else {
-                    // Customize how the room name is displayed here
                     setText("Room: " + item.getRoomName());
                 }
             }
@@ -280,16 +279,8 @@ public class ChatClientGUI extends Application {
         chatRoomList.getItems().setAll(chatClient.chatRoomsNameMap.values());
     }
     
-    public void addChatRoom(String chatRoomName, Boolean private_room) {
-        ChatRoom room = new ChatRoom(username, chatRoomName);
-        if(private_room) {
-        	room.isPrivate_chat();
-        }
-    }
-    
     private void createChatRoom(String chatRoomName) {
         chatClient.sendMessage("/create " + chatRoomName, currentChatRoom.getRoomName());
-        addChatRoom(chatRoomName, false);
     }
     
     private void switchChatRoom(ChatRoom chatRoom) {
@@ -313,7 +304,7 @@ public class ChatClientGUI extends Application {
         displayMessages(chatRoom);
     }
 
-    private void jumpToOriginalMessage(ChatMessage originalMessage) {//So close yet so far.
+    private void jumpToOriginalMessage(ChatMessage originalMessage) {//So close yet so far. You need to click the message 2 times for this to work. TOOD 
     	ObservableList<ChatMessage> items = chatListView.getItems();
     	int index = -1;
     	for(ChatMessage item1:items) {

@@ -74,9 +74,9 @@ public class ChatServer implements Listener, Runnable{
 	}
 	
 	private void createChatRoom(Connection connSender, String roomName) {
-		String user = connectionUserMap.get(connSender);
-		ChatRoom room = new ChatRoom(user, roomName);
 		if(chatRooms.get(roomName) == null) {
+			String user = connectionUserMap.get(connSender);
+			ChatRoom room = new ChatRoom(user, roomName);
 			chatRooms.put(roomName, room);
 			InfoMessage infoMessageSender = new InfoMessage("Successfully created chat room " + roomName);
 			connSender.sendTCP(infoMessageSender);
@@ -108,8 +108,7 @@ public class ChatServer implements Listener, Runnable{
 			exception.sendTCP(infoMessageSender);
 			return;
 	    }
-	    if (targetConnection != null && targetConnection.isConnected() && targetConnection != exception) {
-	        // Create a private message object or use the appropriate method to send the message
+	    if (targetConnection != null && targetConnection.isConnected()) {
 	    	ChatMessage privateMessage = new ChatMessage(senderUserName, message);
 	    	privateMessage.setPrivateMessage();
 	    	privateMessage.setReciever(targetUserName);
@@ -268,7 +267,7 @@ public class ChatServer implements Listener, Runnable{
 				    			connection.sendTCP(infoMessageSender);
 				            }
 				        } else {
-			    			InfoMessage infoMessageSender = new InfoMessage("Invalid invite format, the expected format is /invite room_name user_name");
+			    			InfoMessage infoMessageSender = new InfoMessage("Invalid invite format, the expected format is " + Constants.INVITE_COMMAND + " room_name user_name");
 			    			connection.sendTCP(infoMessageSender);
 				        }
 					}
@@ -276,10 +275,9 @@ public class ChatServer implements Listener, Runnable{
 				        String[] parts = chatMessageText.split("\\s+", 2);
 				        if (parts.length == 2) {
 				            String roomName = parts[1];
-				            
 				            createChatRoom(connection, roomName);
 				        } else {
-			    			InfoMessage infoMessageSender = new InfoMessage("Invalid create format, the expected format is /create room_name");
+			    			InfoMessage infoMessageSender = new InfoMessage("Invalid create format, the expected format is " + Constants.CREATE_ROOM_COMMAND + " room_name");
 			    			connection.sendTCP(infoMessageSender);
 				        }
 					}
@@ -290,7 +288,7 @@ public class ChatServer implements Listener, Runnable{
 				            String message = parts[2];
 				            sendPrivateMessage(connection, userName, message, chatMessage.getSender());
 				        } else {
-			    			InfoMessage infoMessageSender = new InfoMessage("Invalid private message format, the expected format is /private user_name message");
+			    			InfoMessage infoMessageSender = new InfoMessage("Invalid private message format, the expected format is " + Constants.PRIVATE_MESSAGE_COMMAND + " user_name message");
 			    			connection.sendTCP(infoMessageSender);
 				        }
 					}
@@ -309,7 +307,7 @@ public class ChatServer implements Listener, Runnable{
 				    			connection.sendTCP(infoMessageSender);
 				            }
 				        } else {
-			    			InfoMessage infoMessageSender = new InfoMessage("Invalid join private chat format, the expected format is /join_private_chat username");
+			    			InfoMessage infoMessageSender = new InfoMessage("Invalid join private chat format, the expected format is " + Constants.JOIN_PRIVATE_CHAT_COMMAND + " username");
 			    			connection.sendTCP(infoMessageSender);
 				        }
 					}
@@ -319,7 +317,7 @@ public class ChatServer implements Listener, Runnable{
 				            String roomName = parts[1];
 				            joinRoom(connection, roomName, chatMessage.getSender());
 				        } else {
-			    			InfoMessage infoMessageSender = new InfoMessage("Invalid join room format, the expected format is /join room_name");
+			    			InfoMessage infoMessageSender = new InfoMessage("Invalid join room format, the expected format is " + Constants.JOIN_ROOM_COMMAND + " room_name");
 			    			connection.sendTCP(infoMessageSender);
 				        }
 					}
@@ -352,7 +350,7 @@ public class ChatServer implements Listener, Runnable{
 								connection.sendTCP(infoMessageSender);
 				            }
 				        } else {
-			    			InfoMessage infoMessageSender = new InfoMessage("Invalid get more messages format, the expected format is /get_more_messages room_name number_of_messages");
+			    			InfoMessage infoMessageSender = new InfoMessage("Invalid get more messages format, the expected format is " + Constants.GET_MORE_MESSAGES_COMMAND + " room_name number_of_messages");
 			    			connection.sendTCP(infoMessageSender);
 				        }
 					}
@@ -365,8 +363,8 @@ public class ChatServer implements Listener, Runnable{
 					EditMessage editMessage = (EditMessage)object;
 					ChatMessage message = editMessage.getMessage();
 					String user = editMessage.getUser();
-					String messageText = editMessage.getTxt();
 					if(user.equals(message.getSender())) {
+						String messageText = editMessage.getTxt();
 						if(message.isPrivateMessage()) {
 				    		ChatRoom pChatRoom = getPrivateChatRoom(message.getSender(), message.getReciever());
 							UpdatedChatMessage updatedMessage = new UpdatedChatMessage(message.getMessageId(), user, messageText);
@@ -426,7 +424,7 @@ public class ChatServer implements Listener, Runnable{
 						room = chatRooms.get(roomName);
 					}
 					LinkedHashSet<ChatMessage> history = room.getMessageHistory();
-					List<ChatMessage> messageList = new ArrayList<>(history);
+					List<ChatMessage> messageList = new ArrayList<ChatMessage>(history);
 					int index = messageList.lastIndexOf(message);
 					connection.sendTCP(new ChatMessageLinkedHashSet (room.getLastXMessages(history.size() - index)));
 					return;
