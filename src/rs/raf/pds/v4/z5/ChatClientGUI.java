@@ -157,6 +157,7 @@ public class ChatClientGUI extends Application {
                 	setTextFill(Color.BLACK);
                     String text = item.toString();
                     if (item.isEdited()) {
+                    	setTextFill(Color.RED);
                         text += " (Ed)";
                     }
                     if(item.isPrivateMessage()) {

@@ -272,7 +272,7 @@ public class ChatClient implements Runnable{
 		finally {
 			running = false;
 			System.out.println("CLIENT SE DISCONNECTUJE");
-			client.close();;
+			client.close();
 		}
 	}
 	public static void main(String[] args) {
